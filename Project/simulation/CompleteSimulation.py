@@ -16,7 +16,7 @@ prod5 = Product(5, 1.00, secondary_list=[1, 4])
 products = [prod1, prod2, prod3, prod4, prod5]
 
 """ Alpha functions """
-mv = 1  # max alpha function value
+mv = 1  # don't change it,  max alpha function value
 act = 20  # activation
 alpha_usr1 = [
     util.new_alpha_function(saturation_speed=0.025, max_value=mv, activation=act),
@@ -26,7 +26,6 @@ alpha_usr1 = [
     util.new_alpha_function(saturation_speed=0.04, max_value=mv, activation=act),
     util.new_alpha_function(saturation_speed=0.06, max_value=mv, activation=act)
 ]
-mv = 1  # max alpha function value
 act = 25  # activation
 alpha_usr2 = [
     util.new_alpha_function(saturation_speed=0.18, max_value=mv, activation=act),
@@ -36,7 +35,6 @@ alpha_usr2 = [
     util.new_alpha_function(saturation_speed=0.21, max_value=mv, activation=act),
     util.new_alpha_function(saturation_speed=0.19, max_value=mv, activation=act)
 ]
-mv = 1  # max alpha function value
 act = 15  # activation
 alpha_usr3 = [
     util.new_alpha_function(saturation_speed=0.08, max_value=mv, activation=act),
