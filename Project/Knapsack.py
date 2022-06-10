@@ -31,9 +31,13 @@ class Knapsack:
 
                 """set table entry to NINF in case of infeasible budget for the new campaign considered and
                 previous combination of campaigns considered.
+                
                 In particular, if the reward of the previous combination equals to 0 and the new reward equals
                 to NINF, or the reward of the previous combination equals to NINF and the new reward equals to 0,
-                then set the new entry of the dp table to NINF"""
+                or both reward of the previous cominbation and the new reward equal to NINF
+                then set the new entry of the dp table to NINF
+                
+                """
                 if (self.rewards[row - 1][column] < 0 and self.dp_table[row - 1][column] == 0) \
                         or (self.rewards[row - 1][column] == 0 and self.dp_table[row - 1][column] < 0) or \
                             (self.rewards[row - 1][column] < 0 and self.dp_table[row - 1][column] < 0):
