@@ -4,6 +4,7 @@ from Product import Product
 class Graph:
     """ Implements a graph of instances of Products, it is not necessary to work indexing the
     products but the instantiated objects has to be used"""
+
     def __init__(self):
         self.graph = {}
         self.node_list = []
@@ -40,7 +41,7 @@ class Graph:
 
     def get_all_nodes(self):
         """ return all nodes composing the graph """
-        return [*self.graph]    # this notation make a list of all keys of dict graph
+        return [*self.graph]  # this notation make a list of all keys of dict graph
 
     def printGraph(self):
         """ print adjacency list representation """
@@ -48,3 +49,16 @@ class Graph:
             print(f"--- node: {src} ---")
             for (node, weight) in node_list:
                 print(f"\t( {src} )--[w:{weight:.3f}]-—>( {node} )")
+
+    def get_adjacency_matrix(self):
+        """ print adjacency matrix representation """
+        matrix = []
+
+        for (src, node_list) in self.graph.items():
+            row = [0.0 for _ in range(len(self.graph.items()))]
+            for (node, weight) in node_list:
+                row[node.id - 1] = weight
+
+            matrix.append(row)
+
+        return matrix

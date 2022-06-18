@@ -1,4 +1,6 @@
 from random import randint
+from typing import Union
+import pandas as pd
 import numpy as np
 from Graph import Graph
 from random import uniform
@@ -62,3 +64,7 @@ def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, 
 
 def no_noise_matrix(n_user=3, n_product=5):
     return [[1 for c in range(n_product)] for r in range(n_user)]
+
+
+def get_prettyprint_array(arr: Union[np.ndarray, list], row_labels: list[str] = None, col_labels: list[str] = None):
+    return pd.DataFrame(arr, columns = col_labels, index = row_labels)
