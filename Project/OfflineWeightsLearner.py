@@ -1,11 +1,12 @@
 import numpy as np
 
 
-class WeightsLearner:
+class OfflineWeightsLearner:
 
     # the estimation of the probability can be computed node by node independently , so we need just the targetNodes
 
-    def generateEpisodesDataset(self, numOfEpisodes: int, probabilitiesMatrix) -> list[list[np.ndarray]]:
+    @staticmethod
+    def __generateEpisodesDataset(numOfEpisodes: int, probabilitiesMatrix) -> list[list[np.ndarray]]:
 
         def simulateEpisode(initialProbabilitiesMatrix: np.ndarray, numOfMaxSteps) -> list[np.ndarray]:
             probabilitiesMatrix = initialProbabilitiesMatrix.copy()
@@ -13,6 +14,7 @@ class WeightsLearner:
 
             # active nodes at time 0 are chosen by drawing them from a binomial distribution with parameters 1, 0.1. it returns
             # an array of len numOfNodes, with values 0 or 1.
+
             initialActiveNodes = np.random.binomial(1, 0.5, size = numOfNodes)
 
             # the dataset to exploit to estimate probabilities,
@@ -62,14 +64,14 @@ class WeightsLearner:
 
         return dataset
 
-    def estimateProbabilities(self,
-                              probabilitiesMatrix,
+    @staticmethod
+    def estimateProbabilities(probabilitiesMatrix,
                               targetNodes,
                               numberOfNodes,
                               numOfEpisodes) -> np.ndarray:
 
-        datasetOfDiffusionEpisodes = self.generateEpisodesDataset(numOfEpisodes = numOfEpisodes,
-                                                                  probabilitiesMatrix = probabilitiesMatrix)
+        datasetOfDiffusionEpisodes = OfflineWeightsLearner.__generateEpisodesDataset(numOfEpisodes = numOfEpisodes,
+                                                                                     probabilitiesMatrix = probabilitiesMatrix)
 
         estimatedProbs = np.empty((len(targetNodes), numberOfNodes))
 

@@ -1,3 +1,4 @@
+import random
 from random import randint
 from typing import Union
 import pandas as pd
@@ -6,7 +7,7 @@ from Graph import Graph
 from random import uniform
 
 
-def get_probabilities(quantity, padding=0.5):
+def get_probabilities(quantity, padding):
     """it return a random list of probabilities that sum to 1-padding"""
 
     if int(quantity) <= 0:
@@ -31,26 +32,77 @@ def get_probabilities(quantity, padding=0.5):
     return probabilities
 
 
-def random_fully_connected_graph(products=[], padding=0.1):
+def random_fully_connected_graph(products = [], padding = 0.1):
     """ Generate a fully connected random graph with the given Products
         the weights will sum to 1-padding """
-    graph = Graph()
+    return __get_graph_specify_neighbours(products = products,
+                                          padding = padding,
+                                          num_of_neighbours = len(products) - 1,
+                                          weighted = True,
+                                          known = True)
+
+
+def random_fully_connected_unknown_graph(products = []):
+    """ Generate a fully connected random unknown weighted graph
+        with the given Products"""
+    return __get_graph_specify_neighbours(products = products,
+                                          num_of_neighbours = len(products) - 1,
+                                          padding = None,
+                                          weighted = False,
+                                          known = False)
+
+def get_ecommerce_graph(products = [], padding = 0.1):
+    return __get_graph_specify_neighbours(products = products,
+                                          num_of_neighbours = 2,
+                                          padding = padding,
+                                          weighted = True,
+                                          known = True)
+
+
+def __get_graph_specify_neighbours(products: list,
+                                   num_of_neighbours: Union[list[int], int], padding: Union[float, list[float]] = None,
+                                   weighted = True, known = True):
+    graph = Graph() if known else LearnableGraph()
+
+    if known and not padding:
+        padding = [0.1 for _ in range(len(products))]
+
+    if known and isinstance(padding, float):
+        padding = [padding for _ in range(len(products))]
+
+    if isinstance(num_of_neighbours, int):
+        num_of_neighbours = [num_of_neighbours for _ in range(len(products))]
+
+    for n in num_of_neighbours:
+        if n > len(products) - 1:
+            raise ValueError("number of neighbours cannot exceed number of products - 1")
 
     for prod in products:
-        graph.add_node(prod)
+        graph.add_node(item = prod)
 
-    for prod in products:
-        weights = get_probabilities(4, padding=padding)  # to change weights change here
-        child_products = products.copy()
-        child_products.remove(prod)
+    for i, prod in enumerate(products):
 
-        for i, prod_child in enumerate(child_products):
-            graph.add_edge(prod, prod_child, weights[i])
+        if known:
+            if weighted:
+                weights = get_probabilities(num_of_neighbours[i], padding = padding[i])  # to change weights change here
+            else:
+                weights = [0.0 for _ in range(len(num_of_neighbours))]
+        child_nodes = products.copy()
+        child_nodes.remove(prod)
+
+        for _ in range(len(products) - 1 - num_of_neighbours[i]):
+            child_nodes.pop(random.randrange(len(child_nodes)))
+
+        for k, prod_child in enumerate(child_nodes):
+            if known:
+                graph.add_edge(prod, prod_child, weights[k])
+            else:
+                graph.add_edge(prod, prod_child, None)
 
     return graph
 
 
-def new_alpha_function(saturation_speed=1, max_value=1, activation=0.1):
+def new_alpha_function(saturation_speed = 1, max_value = 1, activation = 0.1):
     """ When using the alpha functions remember to clip them to 0 """
     return lambda x: (-1 + 2 / (1 + np.exp(- saturation_speed * (x - activation)))) * max_value
 
