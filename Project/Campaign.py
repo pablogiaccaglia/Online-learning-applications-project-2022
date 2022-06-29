@@ -14,4 +14,4 @@ class Campaign:
         """ Function used to compute the reaction of an user to a campaign instance, the function
             takes as input the alpha function of the user and compute it based on the allocated balance of the
             campaign upper-bounding it to alpha_i_max """
-        return min(user_alpha_function(self.allocated_budget).clip(0.0), self.alpha_i_max)
+        return user_alpha_function(self.allocated_budget).clip(0.0) * self.alpha_i_max

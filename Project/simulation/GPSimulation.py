@@ -14,19 +14,6 @@ test_alpha = [
     util.new_alpha_function(saturation_speed=0.11, max_value=0.9, activation=20),
     util.new_alpha_function(saturation_speed=0.09, max_value=0.8, activation=15)
 ]
-print(test_alpha[0])
-# plot alpha functions
-img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
-axs = axss.flatten()
-for i in range(6):
-    x = np.linspace(0, 100, 100)
-    y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
-    axs[i].set_xlabel("budget")
-    axs[i].set_ylabel(f"alpha{i}_val")
-    axs[i].plot(x, y)
-
-if False:   # show or not alpha plot
-    plt.show()
 
 """ Create 5 Products """
 
@@ -95,24 +82,15 @@ for day in range(days):
     prob_user2 = 0.5
     prob_user3 = 0.3
 
-    # behavior of USERS based on their alpha_function for product 1 and campaign 1 (aggregate alpha_1)
-    alpha_1 = (prob_user1 * cmp1.get_alpha_i(user1.alpha_functions[1]) +
-               prob_user2 * cmp1.get_alpha_i(user2.alpha_functions[1]) +
-               prob_user3 * cmp1.get_alpha_i(user3.alpha_functions[1]))
-    # behavior of USER1 based on their alpha_function for product 1 and campaign 1 (disaggregated alpha_1)
-    alpha_1_usr1 = prob_user1 * cmp1.get_alpha_i(user1.alpha_functions[1])
 
     # expected gross profit of product one (aggregated profit)
     gross_profit_prod1 = (prob_user1 * cmp1.get_alpha_i(user1.alpha_functions[1]) * user1.expected_profit()[0] +
                           prob_user2 * cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0] +
                           prob_user3 * cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
     # expected gross profit of product one user one (disaggregated profit)
-    gross_profit_prod1_usr1 = ( cmp1.get_alpha_i(user1.alpha_functions[1]) * user1.expected_profit()[0])
-    gross_profit_prod1_usr2 = ( cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0])
-    gross_profit_prod1_usr3 = ( cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
+    gross_profit_prod1_usr1 = (cmp1.get_alpha_i(user1.alpha_functions[1]) * user1.expected_profit()[0])
+    gross_profit_prod1_usr2 = (cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0])
+    gross_profit_prod1_usr3 = (cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
 
-    print(
-        f"with {allocated_budget} budget -> alpha1: {alpha_1:.3f}/{alpha_i_max[0]}\t Profit {gross_profit_prod1:.3f}"
-        f"\t(u1: {gross_profit_prod1_usr1:.3f}) (u2: {gross_profit_prod1_usr2:.3f}) (u3: {gross_profit_prod1_usr3:.3f})")
     print()
     print (gross_profit_prod1_usr1/user1.expected_profit()[0])

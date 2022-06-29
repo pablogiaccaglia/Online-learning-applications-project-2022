@@ -1,9 +1,9 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import Project.Utils as util
 from Project.Campaign import Campaign
 from Project.Product import Product
 from Project.User import User
+import numpy as np
 
 """ How to create alpha functions """
 test_alpha = [
@@ -12,21 +12,7 @@ test_alpha = [
     util.new_alpha_function(saturation_speed=0.3, max_value=0.85, activation=25),
     util.new_alpha_function(saturation_speed=0.14, max_value=0.7, activation=25),
     util.new_alpha_function(saturation_speed=0.11, max_value=0.9, activation=20),
-    util.new_alpha_function(saturation_speed=0.09, max_value=0.8, activation=15)
 ]
-print(test_alpha[0])
-# plot alpha functions
-img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
-axs = axss.flatten()
-for i in range(6):
-    x = np.linspace(0, 100, 100)
-    y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
-    axs[i].set_xlabel("budget")
-    axs[i].set_ylabel(f"alpha{i}_val")
-    axs[i].plot(x, y)
-
-if False:   # show or not alpha plot
-    plt.show()
 
 """ Create 5 Products """
 
@@ -44,7 +30,7 @@ products = [prod1, prod2, prod3, prod4, prod5]
 user1 = User(id=1,
              reservation_prices=[6.0, 6.0, 6.0, 6.0, 6.0],
              lmbda=0.7,
-             alpha_functions=test_alpha[:5],
+             alpha_functions=test_alpha,
              exp_number_purchase=[2.1, 2.0, 1.0, 1.0, 0.0],
              weighted_graph=util.random_fully_connected_graph(products),
              # clarify: is the weighted graph per user or general?
@@ -54,7 +40,7 @@ user1 = User(id=1,
 user2 = User(id=2,
              reservation_prices=[1.0, 2.0, 3.0, 4.0, 5.0],
              lmbda=0.85,
-             alpha_functions=test_alpha[:5],
+             alpha_functions=test_alpha,
              exp_number_purchase=[1.4, 2.2, 1.3, 1.0, 1.1],
              weighted_graph=util.random_fully_connected_graph(products),
              # expected_profits = expected_profits
@@ -63,7 +49,7 @@ user2 = User(id=2,
 user3 = User(id=3,
              reservation_prices=[6.0, 3.0, 1.0, 1.5, 1.3],
              lmbda=0.6,
-             alpha_functions=test_alpha[:5],
+             alpha_functions=test_alpha,
              exp_number_purchase=[3.0, 2.0, 2.1, 1.6, 1.1],
              weighted_graph=util.random_fully_connected_graph(products),
              # expected_profits = expected_profits
