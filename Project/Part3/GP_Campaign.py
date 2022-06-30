@@ -24,7 +24,7 @@ class GP_Campaign(Campaign):
     '''
     def get_all_alphas_noisy(self, user_alphas):
         alphas = np.array(user_alphas)
-        alphas = np.append(alphas,5-alphas.sum())
+        alphas = np.append(alphas, 5-alphas.sum())
         # returns an array with the 5 alphas and the competitor's alpha, all normalized to 1
         return np.random.dirichlet(alphas, 1)
 

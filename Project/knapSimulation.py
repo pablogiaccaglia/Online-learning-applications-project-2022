@@ -107,7 +107,7 @@ users = [user1, user2, user3]
 
 """ Campaigns SETUP """
 alpha_i_max = [0.5, 0.5, 0.3, 0.4, 0.3]
-allocated_budget = [10, 20, 30, 40, 50]  # range 0-100
+allocated_budget = [10, 20, 30, 40, 50,60,70,80,90,100]  # range 0-100
 competitor_alpha = np.sum(alpha_i_max)
 
 cmp1 = Campaign(1, allocated_budget[0], alpha_i_max = alpha_i_max[0])
