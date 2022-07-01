@@ -11,4 +11,5 @@ class Learner:
         self.collected_rewards = np.array([])
 
     def update_observations(self, reward):
-        self.collected_rewards = np.append(self.collected_rewards, reward)
+        # this line stacks the collected rewards with the array of incoming rewards
+        self.collected_rewards = np.append(np.atleast_2d(self.collected_rewards), np.atleast_2d(reward), axis=0)
