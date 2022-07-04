@@ -2,6 +2,7 @@ import random
 from random import randint
 from typing import Union
 import pandas as pd
+from random import uniform
 import numpy as np
 from Graph import Graph
 from random import uniform
@@ -120,3 +121,10 @@ def no_noise_matrix(n_user=3, n_product=5):
 
 def get_prettyprint_array(arr: Union[np.ndarray, list], row_labels: list[str] = None, col_labels: list[str] = None):
     return pd.DataFrame(arr, columns = col_labels, index = row_labels)
+
+
+def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, n_product=5):
+    """ return a 2D list: one row for user and column for products
+        it returns the multiplier for a stochastic reduction on alpha function """
+    global_influence = uniform(0.0, max_global_influence)   # set day trend
+    return [[1-uniform(0, max_reduction)-global_influence for c in range(n_product)] for r in range(n_user)]
