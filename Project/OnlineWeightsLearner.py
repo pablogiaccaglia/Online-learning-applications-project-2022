@@ -62,21 +62,27 @@ class OnlineWeightsLearner:
         return len(activated) - len(seeds)
 
     @staticmethod
-    def __monte_carlo_sampling(graph: LearnableGraph, seeds, max_repetitions):
+    def __monte_carlo_spread(graph: LearnableGraph, seeds, max_repetitions):
         nodes_activation_probabilities = np.zeros(graph.n_nodes, dtype = np.float16)
+
         for _ in range(max_repetitions):
 
             # np.random.rand generates a matrix of random (0, 1) numbers!
             # We want a live_edges to work with
-            live_edges = graph.get_adjacency_matrix() > np.random.rand(graph.n_nodes, graph.n_nodes)
+            live_edges = graph.get_adjacency_matrix() > np.random.rand(graph.n_nodes,
+                                                                       graph.n_nodes)  # generate live-edge graph
+
             activated = []
             new_activated = seeds
             while new_activated:
                 activated = new_activated + activated
-                new_activated = []
-                for active in activated:
-                    for neighbour in graph.get_neighbours(node = active):
+                new_activated = []  # keeps track of newly activated nodes, to know when to stop exploration.
 
+                for active in activated:  # initially just the seed is activated
+
+                    for neighbour in graph.get_neighbours(node = active):  # consider the nodes of the active edges
+
+                        # if the edge is active and the dest node has not been already considered, increment counter
                         if live_edges[active.id - 1][neighbour.id - 1] and not (
                                 neighbour in new_activated or neighbour in activated):
                             nodes_activation_probabilities[neighbour.id - 1] += 1
@@ -84,10 +90,10 @@ class OnlineWeightsLearner:
 
         nodes_activation_probabilities = nodes_activation_probabilities / max_repetitions
 
-        return np.mean(nodes_activation_probabilities)
+        return np.mean(nodes_activation_probabilities)  # measures the magnitude of the spread
 
     @staticmethod
-    def __choose_seeds_from_sampling(graph: LearnableGraph, simulations):
+    def __choose_seeds_from_sampling(graph: LearnableGraph, monte_carlo_repetitions):
         candidates = graph.get_not_dangling_nodes()  # gets the coordinates of nodes having out-degree > 0
 
         # Retrieve for each of them alpha and beta, compute the deviation and update probability
@@ -100,60 +106,32 @@ class OnlineWeightsLearner:
                 sample = np.random.beta(a = alpha, b = beta)
                 graph.set_weight(src = candidate, dest = neighbour, weight = sample)
 
-        seeds, _ = OnlineWeightsLearner.__greedy_algorithm(graph, simulations)
+        seeds = OnlineWeightsLearner.__monte_carlo_sampling(graph, monte_carlo_repetitions)
 
         return seeds
 
-    """# The function returns the best possible seed (the one maximizing the influence) given a certain graph
-    def greedy_algorithm(graph, k):
-        seeds = []
-        spreads = []
-        best_node = None
-        nodes = graph.get_all_nodes()
-        best_spread = 0
-
-        # For all the nodes which are not seed
-        for node in nodes:
-            spread = monte_carlo_sampling(graph = graph, seeds = seeds + [node], max_repetitions = k)
-
-            if spread > best_spread:
-                best_spread = spread
-                best_node = node
-
-            spreads.append(best_spread)
-            if best_node:
-                seeds.append(best_node)
-
-            # I remove it from nodes in order to not evaluate it again in the future
-            if nodes and best_node in nodes:
-                nodes.remove(best_node)
-
-        return seeds, spreads[-1]"""
-
     # The function returns the best possible seed (the one maximizing the influence) given a certain graph
+
     @staticmethod
-    def __greedy_algorithm(graph, k):
+    def __monte_carlo_sampling(graph, monte_carlo_repetitions):
         spreads = []
         best_node = None
         nodes = graph.get_all_nodes()
         best_spread = 0
 
-        # For all the nodes which are not seed
-        for node in nodes:
-            spread = OnlineWeightsLearner.__monte_carlo_sampling(graph = graph, seeds = [node], max_repetitions = k)
-
+        for node in nodes:  # evaluate the spread of each node as a seed
+            spread = OnlineWeightsLearner.__monte_carlo_spread(graph = graph, seeds = [node],
+                                                               max_repetitions = monte_carlo_repetitions)
             if spread > best_spread:
                 best_spread = spread
                 best_node = node
 
             spreads.append(best_spread)
 
-        # best_node = np.random.choice(nodes)
-
-        return [best_node], spreads[-1]
+        return [best_node]
 
     @staticmethod
-    def estimate_weights(true_graph: Graph, repetitions, simulations):
+    def estimate_weights(true_graph: Graph, simulations, monte_carlo_repetitions):
         # Copy the original graph and convert to a learnable one -> all weights are initially set to 0.5
         graph = LearnableGraph(g = true_graph)
 
@@ -165,10 +143,11 @@ class OnlineWeightsLearner:
         # total_error = 0.0
 
         # Main procedure
-        for r in range(repetitions):
-            print("Iteration: " + str(r + 1) + "/" + str(repetitions), end = "")
-            # epsilon = (1 - r / repetitions) ** 2
-            seeds = OnlineWeightsLearner.__choose_seeds_from_sampling(graph = graph, simulations = simulations)
+        for r in range(simulations):
+            print("Iteration: " + str(r + 1) + "/" + str(simulations), end = "")
+            # epsilon = (1 - r / monte_carlo_repetitions) ** 2
+            seeds = OnlineWeightsLearner.__choose_seeds_from_sampling(graph = graph,
+                                                                      monte_carlo_repetitions = monte_carlo_repetitions)
             OnlineWeightsLearner.__influence_episode(graph = graph,
                                                      seeds = seeds,
                                                      true_graph = true_graph)
