@@ -32,9 +32,9 @@ class OnlineWeightsLearner:
 
         candidates = graph.get_not_dangling_nodes()  # gets the coordinates of nodes having out-degree > 0
 
+        # generate a live edge graph and keep track of active edges with bionomial_matrix
         for candidate in candidates:  # each candidate is a node having out degree > 0
             neighbours = graph.get_neighbours(node = candidate)
-
             for neighbour in neighbours:
                 true_probability = true_graph.get_weight(candidate, neighbour, fromId = True)
                 reward = np.random.binomial(1, true_probability)
@@ -63,6 +63,7 @@ class OnlineWeightsLearner:
 
     @staticmethod
     def __monte_carlo_spread(graph: LearnableGraph, seeds, max_repetitions):
+
         nodes_activation_probabilities = np.zeros(graph.n_nodes, dtype = np.float16)
 
         for _ in range(max_repetitions):
@@ -136,11 +137,12 @@ class OnlineWeightsLearner:
         graph = LearnableGraph(g = true_graph)
 
         x_list = []
-        x2_list = []
         y_list = []  # ideal error
         y2_list = []
 
-        # total_error = 0.0
+        regret_list = []
+
+        total_error = 0.0
 
         # Main procedure
         for r in range(simulations):
@@ -153,26 +155,33 @@ class OnlineWeightsLearner:
                                                      true_graph = true_graph)
 
             error = OnlineWeightsLearner.get_total_error(graph, true_graph)
-            # total_error += error
+            total_error += error
             # print(" " + str(total_error))
 
             x_list.append(r)
-            x2_list.append(r)
-            # y_list.append(total_error)
+            regret_list.append(total_error)
             y_list.append(error)
             y2_list.append(0)
+
             print("", end = "\r")
 
         print("", end = "")
 
         plt.plot(x_list, y_list, label = 'Bandit Approximation', color = 'tab:blue', linestyle = '-')
-        plt.plot(x2_list, y2_list, label = 'Ideal 0 Value', color = 'tab:orange', linestyle = '--')
+        plt.plot(x_list, y2_list, label = 'Ideal 0 Value', color = 'tab:orange', linestyle = '--')
         plt.title("Unknown Activation Probabilities - Approximation Error")
         plt.ylabel("Approximation Error")
         plt.xlabel("Time")
         plt.yticks(np.arange(0, max(y_list), 0.1))
         plt.legend()
+        plt.show()
+        plt.close()
 
+        plt.plot(x_list, regret_list, label = 'Cumulative Regret', color = 'tab:blue', linestyle = '-')
+        plt.title("Unknown Activation Probabilities - Cumulative Regret")
+        plt.ylabel("Cumulative Regret")
+        plt.xlabel("Time")
+        plt.legend()
         plt.show()
 
         return graph
