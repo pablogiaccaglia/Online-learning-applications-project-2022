@@ -82,28 +82,28 @@ graph1 = util.random_fully_connected_graph(products)
 graph2 = util.random_fully_connected_graph(products)
 graph3 = util.random_fully_connected_graph(products)
 
-user1 = User(id = 1,
-             reservation_prices = res_prices_1,
-             lmbda = 0.8,
-             alpha_functions = alpha_usr1,
-             exp_number_purchase = exp_number_purchase_1,
-             weighted_graph = graph1,
+user1 = User(id=1,
+             reservation_prices=res_prices_1,
+             lmbda=0.8,
+             alpha_functions=alpha_usr1,
+             exp_number_purchase=exp_number_purchase_1,
+             weighted_graph=graph1,
              )
 
-user2 = User(id = 2,
-             reservation_prices = res_prices_2,
-             lmbda = 0.5,
-             alpha_functions = alpha_usr2,
-             exp_number_purchase = exp_number_purchase_2,
-             weighted_graph = graph2,
+user2 = User(id=2,
+             reservation_prices=res_prices_2,
+             lmbda=0.5,
+             alpha_functions=alpha_usr2,
+             exp_number_purchase=exp_number_purchase_2,
+             weighted_graph=graph2,
              )
 
-user3 = User(id = 3,
-             reservation_prices = res_prices_3,
-             lmbda = 0.65,
-             alpha_functions = alpha_usr3,
-             exp_number_purchase = exp_number_purchase_3,
-             weighted_graph = graph3,
+user3 = User(id=3,
+             reservation_prices=res_prices_3,
+             lmbda=0.65,
+             alpha_functions=alpha_usr3,
+             exp_number_purchase=exp_number_purchase_3,
+             weighted_graph=graph3,
              )
 
 users = [user1, user2, user3]
@@ -113,11 +113,11 @@ alpha_i_max = [0.5, 0.5, 0.3, 0.4, 0.3]
 allocated_budget = [10, 20, 30, 40, 50]  # range 0-100
 competitor_alpha = np.sum(alpha_i_max)
 
-cmp1 = Campaign(1, allocated_budget[0], alpha_i_max = alpha_i_max[0])
-cmp2 = Campaign(2, allocated_budget[1], alpha_i_max = alpha_i_max[1])
-cmp3 = Campaign(3, allocated_budget[2], alpha_i_max = alpha_i_max[2])
-cmp4 = Campaign(4, allocated_budget[3], alpha_i_max = alpha_i_max[3])
-cmp5 = Campaign(5, allocated_budget[4], alpha_i_max = alpha_i_max[4])
+cmp1 = Campaign(1, allocated_budget[0], alpha_i_max=alpha_i_max[0])
+cmp2 = Campaign(2, allocated_budget[1], alpha_i_max=alpha_i_max[1])
+cmp3 = Campaign(3, allocated_budget[2], alpha_i_max=alpha_i_max[2])
+cmp4 = Campaign(4, allocated_budget[3], alpha_i_max=alpha_i_max[3])
+cmp5 = Campaign(5, allocated_budget[4], alpha_i_max=alpha_i_max[4])
 
 campaigns = [cmp1, cmp2, cmp3, cmp4, cmp5]
 
@@ -134,13 +134,30 @@ for day in range(days):
     cmp4.change_budget(5 * day)
     cmp5.change_budget(5 * day)
 
+    cmp1.change_budget(30)
+    cmp2.change_budget(30)
+    cmp3.change_budget(30)
+    cmp4.change_budget(30)
+    cmp5.change_budget(30)
+
     gross_profit = 0
     """ test total profit by all campaign and all users"""
-    for i, cmp in enumerate(campaigns):
+    """for i, cmp in enumerate(campaigns):
         # can be read: expected profit with respect the total number of users and the reference price
         gross_profit += (prob_user1 * cmp.get_alpha_i(user1.alpha_functions[i]) * user1.expected_profit()[i] +
                          prob_user2 * cmp.get_alpha_i(user2.alpha_functions[i]) * user2.expected_profit()[i] +
-                         prob_user3 * cmp.get_alpha_i(user3.alpha_functions[i]) * user3.expected_profit()[i])
+                         prob_user3 * cmp.get_alpha_i(user3.alpha_functions[i]) * user3.expected_profit()[i])"""
+
+    """ test total profit with stochastic alpha by all campaign and all users"""
+    noise_matrix = util.noise_matrix_alpha()    # generate noisy contractions matrix for alpha functions
+    for i, cmp in enumerate(campaigns):
+        # can be read: expected profit with respect the total number of users and the reference price
+        gross_profit += (prob_user1 * noise_matrix[0][i] * cmp.get_alpha_i(user1.alpha_functions[i])
+                         * user1.expected_profit()[i] +
+                         prob_user2 * noise_matrix[1][i] * cmp.get_alpha_i(user2.alpha_functions[i])
+                         * user2.expected_profit()[i] +
+                         prob_user3 * noise_matrix[2][i] * cmp.get_alpha_i(user3.alpha_functions[i])
+                         * user3.expected_profit()[i])
 
     # convert the pure number in euro
     gross_profit_euro = gross_profit * N_user * reference_price
@@ -174,8 +191,8 @@ for day in range(days):
 N_CLASSES = len(users)
 N_CAMPAIGNS = len(products)
 N_BUDGETS = len(allocated_budget)
-
-print("*" * 30 + " Knapsack simulation " + "*" * 35)
+print()
+print("*" * 25 + " Knapsack simulation " + "*" * 30)
 print()
 
 rewards = np.zeros((N_CLASSES * N_CAMPAIGNS, N_BUDGETS), dtype = np.single)
@@ -191,28 +208,24 @@ for cmp_index in range(0, N_CAMPAIGNS):
 
         for user_idx, user in enumerate(users):
             prob_user = prob_users[user_idx]
-            alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
+            alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])*noise_matrix[user_idx][cmp_index]
             value_per_click = user.expected_profit()[cmp_index]
             expected_gross_profit = prob_user * alpha * value_per_click
             rewards[cmp_index * N_CLASSES + user_idx][budget_idx] = np.single(expected_gross_profit)
-
 
 col_labels = [str(budget) for budget in allocated_budget]
 
 rewards = reference_price * N_user * rewards  # convert the pure number rewards in euros
 
-print("*" * 10 + " Independent rewards Table " + "*" * 10)
-
+print("-" * 10 + " Independent rewards Table " + "-" * 10)
 
 row_label_rewards = []
-row_labels_dp_table =['0']
-for i in range(1, N_CAMPAIGNS+1):
-    for j in range(1, N_CLASSES+1):
-
+row_labels_dp_table = ['0']
+for i in range(1, N_CAMPAIGNS + 1):
+    for j in range(1, N_CLASSES + 1):
         # Cij -> campaign i and user j
         row_label_rewards.append("C" + str(i) + str(j))
         row_labels_dp_table.append("+C" + str(i) + str(j))
-
 
 print(pd.DataFrame(rewards, columns = col_labels, index = row_label_rewards))
 
@@ -228,6 +241,4 @@ K.pretty_print_dp_table()  # prints the final dynamic programming table
 print()
 
 K.pretty_print_output(
-    print_last_row_only = False)  # prints information about last row of the table, including allocations
-
-
+        print_last_row_only = False)  # prints information about last row of the table, including allocations

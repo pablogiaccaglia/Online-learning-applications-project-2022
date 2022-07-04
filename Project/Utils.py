@@ -1,7 +1,7 @@
 from random import randint
 import numpy as np
 from Project.Graph import Graph
-
+from random import uniform
 
 def get_probabilities(quantity, padding=0.5):
     """it return a random list of probabilities that sum to 1-padding"""
@@ -50,3 +50,9 @@ def random_fully_connected_graph(products=[], padding=0.1):
 def new_alpha_function(saturation_speed=1, max_value=1, activation=0.1):
     """ When using the alpha functions remember to clip them to 0 """
     return lambda x: (-1 + 2 / (1 + np.exp(- saturation_speed * (x - activation)))) * max_value
+
+def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, n_product=5):
+    """ return a 2D list: one row for user and column for products
+        it returns the multiplier for a stochastic reduction on alpha function """
+    global_influence = uniform(0.0, max_global_influence)   # set day trend
+    return [[1-uniform(0, max_reduction)-global_influence for c in range(n_product)] for r in range(n_user)]
