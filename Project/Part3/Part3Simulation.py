@@ -48,20 +48,6 @@ alpha_usr3 = [
     util.new_alpha_function(saturation_speed=0.09, max_value=mv, activation=act)
 ]
 
-# plot alpha functions
-test_alpha = alpha_usr3
-img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
-axs = axss.flatten()
-for i in range(6):
-    x = np.linspace(0, 100, 100)
-    y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
-    axs[i].set_xlabel("budget")
-    axs[i].set_ylabel(f"alpha{i}_val")
-    axs[i].plot(x, y)
-
-if False:  # show or not alpha plot
-    plt.show()
-
 """ Users SETUP """
 
 prob_user1 = 0.25
@@ -69,6 +55,28 @@ prob_user2 = 0.45
 prob_user3 = 0.30
 
 prob_users = [prob_user1, prob_user2, prob_user3]
+
+# alpha_users = [alpha_usr1,alpha_usr2,alpha_usr3]
+# alpha_agg = []
+# for i in range(len(alpha_usr1)):
+#     alpha = 0
+#     for j in range(len(alpha_users)):
+#         alpha += alpha_users[i][j] * prob_users[j]
+#     alpha_agg.append(alpha)
+#
+# test_alpha = alpha_agg
+# img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
+# axs = axss.flatten()
+# for i in range(6):
+#     x = np.linspace(0, 100, 100)
+#     y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
+#     axs[i].set_xlabel("budget")
+#     axs[i].set_ylabel(f"alpha{i}_val")
+#     axs[i].plot(x, y)
+#
+# if True:  # show or not alpha plot
+#     plt.show()
+
 
 # base         [0.50, 0.625, 0.75, 0.875, 1.00]
 res_prices_1 = [0.60, 0.725, 0.65, 0.975, 1.10]
@@ -154,26 +162,29 @@ print()
 
 rewards = np.zeros((N_CLASSES * N_CAMPAIGNS, N_BUDGETS), dtype=np.single)
 
-for cmp_index in range(0, N_CAMPAIGNS):
 
-    for budget_idx in range(0, N_BUDGETS):
+# todo check if this is the correct aggregate reward; if it is, I should move this method to a class
+def get_aggregated_profit(allocated_budgets):
+    rewards_per_campaign = []
+    for cmp_index in range(0, N_CAMPAIGNS):
 
         """ Each campaign is observed with all the budget values """
         cmp = Campaign(id=cmp_index + 1,
-                       allocated_budget=allocated_budget[budget_idx],
+                       allocated_budget=allocated_budgets[cmp_index],
                        alpha_i_max=alpha_i_max[cmp_index])
 
+        expected_gross_profit = 0.0
         for user_idx, user in enumerate(users):
             prob_user = prob_users[user_idx]
             alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
             value_per_click = user.expected_profit()[cmp_index]
-            expected_gross_profit = prob_user * alpha * value_per_click
-            rewards[cmp_index * N_CLASSES + user_idx][budget_idx] = np.single(expected_gross_profit)
+            expected_gross_profit += prob_user * alpha * value_per_click
+            # rewards[cmp_index * N_CLASSES + user_idx][budget_idx] = np.single(expected_gross_profit)
+        rewards_per_campaign.append(expected_gross_profit)
+    return rewards_per_campaign
 
-col_labels = [str(budget) for budget in allocated_budget]
 
 rewards = reference_price * N_user * rewards  # convert the pure number rewards in euros
-
 
 # todo: the actual simulation starts here
 """
@@ -188,7 +199,8 @@ gpts_rewards_per_experiment = []
 
 for e in range(0, n_experiments):
 
-    env = BiddingEnvironment(bids=bids, sigma=sigma)  # todo: I want this to return the gross profit.
+    env = BiddingEnvironment(bids=bids, sigma=sigma)  # todo: I want this to return the gross profit. It should do what
+    # get_aggregate_profit does
 
     gts_learner = GTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
     gpts_learner = GPTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
