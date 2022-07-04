@@ -34,7 +34,7 @@ class GPTS_Learner(Learner):
             x = np.atleast_2d(x).T  # todo: test if this still works
             y = self.collected_rewards[:, campaign]
             self.gp.fit(x, y)
-            self.means[:, campaign], self.sigmas[:,campaign] = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
+            self.means[:, campaign], self.sigmas[:, campaign] = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
             self.sigmas[:, campaign] = np.maximum(self.sigmas, 1e-2)  # force sigma>0. It shouldn't be an issue anyway
 
     def update(self, pulled_super_arm, rewards):

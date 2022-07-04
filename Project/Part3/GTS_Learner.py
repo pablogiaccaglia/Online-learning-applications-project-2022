@@ -16,7 +16,8 @@ The number of arms is an array of dimensions (#possible budgets allocations, #pr
 
 WE ASSUME THAT THE BID IS OPTIMAL THROUGHOUT THE DAY, GIVEN THE BUDGET.
 '''
-# todo: how do I init the knapsack table? It should depend on the budget spent: e.g reward for budget=10< reward for budget=20
+# todo: how do I init the knapsack table? It should depend on the budget spent:
+#       e.g reward for budget=10 < reward for budget=20
 # todo: what's the feedback? I think it's the aggregated gross profit for each product (campaign).
 
 
@@ -35,15 +36,21 @@ class GTS_Learner(Learner):
         super_arm = k.allocations[-1][-1]
         return super_arm
 
+    # todo: check if skipping the iteration is fine. I did it to avoid including 0 in the allocated budgets,
+    #       i.e. including 0 as an arm for the gts_learner
     # super_arm like: [20,0,10,30,40] reward like: [80.0,0.0,101.4,200.3,20.3]
     def update_observations(self, super_arm, rewards):
         for campaign, budget in enumerate(super_arm):
+            if budget == 0:
+                continue
             self.rewards_per_arm[np.where(self.arms == budget)][campaign].append(rewards[campaign])
         super().update_observations(rewards)
 
     def update(self, super_arm, rewards):
         self.update_observations(super_arm, rewards)
         for campaign, budget in enumerate(super_arm):
+            if budget == 0:
+                continue
             arm = np.where(self.arms == budget)
             self.means[arm][campaign] = np.mean(self.rewards_per_arm[arm][campaign])
             n_samples = len(self.rewards_per_arm[arm][campaign])
