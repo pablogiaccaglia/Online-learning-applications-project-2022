@@ -1,4 +1,4 @@
-import Learner
+from Learner import Learner
 import numpy as np
 from Project.Knapsack import Knapsack
 '''
@@ -23,17 +23,18 @@ WE ASSUME THAT THE BID IS OPTIMAL THROUGHOUT THE DAY, GIVEN THE BUDGET.
 
 class GTS_Learner(Learner):
     def __init__(self, arms, n_campaigns):  # arms are the budgets (e.g 0,10,20...)
+        self.arms = arms
         self.n_arms = len(arms)  # there should be another solution to pass from numerical budget to index
         super().__init__(self.n_arms, n_campaigns)
-        self.means = np.ones((self.n_arms, n_campaigns)) * 30  # table of rewards for knapsack. Probably not zero??
-        self.sigmas = np.ones((self.n_arms, n_campaigns)) * 20
+        self.means = np.ones((n_campaigns, self.n_arms)) * 30  # table of rewards for knapsack. Probably not zero??
+        self.sigmas = np.ones((n_campaigns, self.n_arms)) * 20
 
     # The arm will be pulled according to the knapsack solution, pulling one arm (choosing one
     # budget) for each campaign. The last iteration of allocation from knapsack contains the best solution
     def pull_arm(self) -> np.array:
-        k = Knapsack(rewards=np.random.normal(self.means, self.sigmas).clip(0.0), budgets=self.arms)
+        k = Knapsack(rewards=np.array(np.random.normal(self.means, self.sigmas).clip(0.0)), budgets=np.array(self.arms))
         k.solve()
-        super_arm = k.allocations[-1][-1]
+        super_arm = k.allocations[-1][-1][1:]  # last row of allocations minus the no campaign case
         return super_arm
 
     # todo: check if skipping the iteration is fine. I did it to avoid including 0 in the allocated budgets,
@@ -43,7 +44,7 @@ class GTS_Learner(Learner):
         for campaign, budget in enumerate(super_arm):
             if budget == 0:
                 continue
-            self.rewards_per_arm[np.where(self.arms == budget)][campaign].append(rewards[campaign])
+            self.rewards_per_arm[campaign][self.arms.index(budget)].append(rewards[campaign])  # todo: check this
         super().update_observations(rewards)
 
     def update(self, super_arm, rewards):
@@ -51,7 +52,7 @@ class GTS_Learner(Learner):
         for campaign, budget in enumerate(super_arm):
             if budget == 0:
                 continue
-            arm = np.where(self.arms == budget)
+            arm = self.arms.index(budget)
             self.means[arm][campaign] = np.mean(self.rewards_per_arm[arm][campaign])
             n_samples = len(self.rewards_per_arm[arm][campaign])
             if n_samples > 1:

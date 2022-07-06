@@ -7,6 +7,8 @@ from Project.User import User
 from GTS_Learner import GTS_Learner
 from GPTS_Learner import GPTS_Learner
 from GP_Campaign import GP_Campaign
+from Bidding_Environment import Bidding_Environment
+from Project.Knapsack import Knapsack
 
 """ Products SETUP """
 
@@ -132,26 +134,6 @@ days = 21
 N_user = 1000  # reference for what alpha= 1 refers to
 reference_price = 3.5
 
-for day in range(days):
-    cmp1.change_budget(5 * day)
-    cmp2.change_budget(5 * day)
-    cmp3.change_budget(5 * day)
-    cmp4.change_budget(5 * day)
-    cmp5.change_budget(5 * day)
-
-    gross_profit = 0
-    """ test total profit by all campaign and all users"""
-    for i, cmp in enumerate(campaigns):
-        # can be read: expected profit with respect the total number of users and the reference price
-        gross_profit += (prob_user1 * cmp.get_alpha_i(user1.alpha_functions[i]) * user1.expected_profit()[i] +
-                         prob_user2 * cmp.get_alpha_i(user2.alpha_functions[i]) * user2.expected_profit()[i] +
-                         prob_user3 * cmp.get_alpha_i(user3.alpha_functions[i]) * user3.expected_profit()[i])
-
-    # convert the pure number in euro
-    gross_profit_euro = gross_profit * N_user * reference_price
-
-    print(f"invested: {5 * day * 5:.2f}€ daily profit: {gross_profit_euro:.2f}€")
-
 """ Some constants """
 
 N_CLASSES = len(users)
@@ -163,25 +145,24 @@ print()
 rewards = np.zeros((N_CLASSES * N_CAMPAIGNS, N_BUDGETS), dtype=np.single)
 
 
-# todo check if this is the correct aggregate reward; if it is, I should move this method to a class
-def get_aggregated_profit(allocated_budgets):
-    rewards_per_campaign = []
-    for cmp_index in range(0, N_CAMPAIGNS):
-
-        """ Each campaign is observed with all the budget values """
-        cmp = Campaign(id=cmp_index + 1,
-                       allocated_budget=allocated_budgets[cmp_index],
-                       alpha_i_max=alpha_i_max[cmp_index])
-
-        expected_gross_profit = 0.0
-        for user_idx, user in enumerate(users):
-            prob_user = prob_users[user_idx]
-            alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
-            value_per_click = user.expected_profit()[cmp_index]
-            expected_gross_profit += prob_user * alpha * value_per_click
-            # rewards[cmp_index * N_CLASSES + user_idx][budget_idx] = np.single(expected_gross_profit)
-        rewards_per_campaign.append(expected_gross_profit)
-    return rewards_per_campaign
+# # todo check if this is the correct aggregate reward; if it is, I should move this method to a class
+# def get_aggregated_profit(allocated_budgets):
+#     rewards_per_campaign = []
+#     for cmp_index in range(0, N_CAMPAIGNS):
+#
+#         """ Each campaign is observed with all the budget values """
+#         cmp = Campaign(id=cmp_index + 1,
+#                        allocated_budget=allocated_budgets[cmp_index],
+#                        alpha_i_max=alpha_i_max[cmp_index])
+#
+#         expected_gross_profit = 0.0
+#         for user_idx, user in enumerate(users):
+#             prob_user = prob_users[user_idx]
+#             alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
+#             value_per_click = user.expected_profit()[cmp_index]
+#             expected_gross_profit += prob_user * alpha * value_per_click
+#         rewards_per_campaign.append(expected_gross_profit)
+#     return rewards_per_campaign
 
 
 rewards = reference_price * N_user * rewards  # convert the pure number rewards in euros
@@ -192,15 +173,14 @@ PART 3 SIMULATION
 """
 sigma = 10
 
-T = 50
-n_experiments = 50
+T = 10
+n_experiments = 5
 gts_rewards_per_experiment = []
 gpts_rewards_per_experiment = []
 
 for e in range(0, n_experiments):
 
-    env = BiddingEnvironment(bids=bids, sigma=sigma)  # todo: I want this to return the gross profit. It should do what
-    # get_aggregate_profit does
+    env = Bidding_Environment(users=users, campaigns=campaigns, prob_users=prob_users)
 
     gts_learner = GTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
     gpts_learner = GPTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
@@ -208,18 +188,28 @@ for e in range(0, n_experiments):
     for t in range(0, T):
         # Gaussian Thompson Sampling
         pulled_arm = gts_learner.pull_arm()
-        reward = env.round(pulled_arm)
-        gts_learner.update(pulled_arm, reward)
+        rewards = env.get_aggregated_profit(pulled_arm)
+        rewards_euros = [r*N_user*reference_price for r in rewards] # todo: ask others if reference prices should differ
+        gts_learner.update(pulled_arm, rewards_euros)
 
         # GP Thompson Sampling
         pulled_arm = gpts_learner.pull_arm()
-        reward = env.round(pulled_arm)
-        gpts_learner.update(pulled_arm, reward)
+        rewards = env.get_aggregated_profit(pulled_arm)
+        rewards_euros = [r*N_user*reference_price for r in rewards]
+        gpts_learner.update(pulled_arm, rewards_euros)
 
     gts_rewards_per_experiment.append(gts_learner.collected_rewards)
     gpts_rewards_per_experiment.append(gpts_learner.collected_rewards)
 
-opt = np.max(env.means)  # todo: not so sure about how to deal with this
+"""
+compute clairvoyant here, it will change when we will add noise
+"""
+env = Bidding_Environment(users=users, campaigns=campaigns, prob_users=prob_users)
+K = Knapsack(rewards=rewards, budgets=np.array(allocated_budget))
+K.solve()
+opt_arm = K.allocations[-1][-1]
+opt = np.max(env.get_aggregated_profit(opt_arm))
+opt_euros = [o*N_user*reference_price for o in opt]
 
 plt.figure(0)
 plt.ylabel('Regret')

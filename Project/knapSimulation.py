@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Utils as util
-from Campaign import Campaign
-from Product import Product
-from User import User
+import Project.Utils as util
+from Project.Campaign import Campaign
+from Project.Product import Product
+from Project.User import User
 import pandas as pd
-from Knapsack import Knapsack
+from Project.Knapsack import Knapsack
 
 """ Products SETUP """
 
