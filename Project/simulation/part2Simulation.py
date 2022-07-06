@@ -12,6 +12,20 @@ n_budgets = 100
 environment = Environment()
 """ @@@@ ---------------- @@@@ """
 
+
+def table_metadata(n_prod, n_users, avail_budget):
+    _col_labels = [str(budget) for budget in avail_budget]
+
+    _row_label_rewards = []
+    _row_labels_dp_table = ['0']
+    for i in range(1, n_prod + 1):
+        for j in range(1, n_users + 1):
+            # Cij -> campaign i and user j
+            _row_label_rewards.append("C" + str(i) + str(j))
+            _row_labels_dp_table.append("+C" + str(i) + str(j))
+    return _row_label_rewards, _row_labels_dp_table, _col_labels
+
+
 for day in range(days):
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
     sim_obj = environment.play_one_day(N_user, reference_price)  # object with all the day info
@@ -53,16 +67,3 @@ for day in range(days):
     # TODO allocate in the environment the budget found by knapsack
     # environment.set_campaign_budget()
     print(f"daily profits:\n\t u1:{profit1:.2f}€ || u2:{profit2:.2f}€ || u3:{profit3:.2f}€")
-
-
-def table_metadata(n_prod, n_users, avail_budget):
-    _col_labels = [str(budget) for budget in avail_budget]
-
-    _row_label_rewards = []
-    _row_labels_dp_table = ['0']
-    for i in range(1, n_prod + 1):
-        for j in range(1, n_users + 1):
-            # Cij -> campaign i and user j
-            _row_label_rewards.append("C" + str(i) + str(j))
-            _row_labels_dp_table.append("+C" + str(i) + str(j))
-    return _row_label_rewards, _row_labels_dp_table, _col_labels
