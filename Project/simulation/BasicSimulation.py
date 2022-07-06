@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Utils as util
-from Campaign import Campaign
-from Product import Product
-from User import User
+import Project.Utils as util
+from Project.Campaign import Campaign
+from Project.Product import Product
+from Project.User import User
 
 """ How to create alpha functions """
 test_alpha = [
@@ -107,10 +107,12 @@ for day in range(days):
                           prob_user2 * cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0] +
                           prob_user3 * cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
     # expected gross profit of product one user one (disaggregated profit)
-    gross_profit_prod1_usr1 = (prob_user1 * cmp1.get_alpha_i(user1.alpha_functions[1]) * user1.expected_profit()[0])
-    gross_profit_prod1_usr2 = (prob_user2 * cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0])
-    gross_profit_prod1_usr3 = (prob_user3 * cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
+    gross_profit_prod1_usr1 = ( cmp1.get_alpha_i(user1.alpha_functions[1]) * user1.expected_profit()[0])
+    gross_profit_prod1_usr2 = ( cmp1.get_alpha_i(user2.alpha_functions[1]) * user2.expected_profit()[0])
+    gross_profit_prod1_usr3 = ( cmp1.get_alpha_i(user3.alpha_functions[1]) * user3.expected_profit()[0])
 
     print(
         f"with {allocated_budget} budget -> alpha1: {alpha_1:.3f}/{alpha_i_max[0]}\t Profit {gross_profit_prod1:.3f}"
         f"\t(u1: {gross_profit_prod1_usr1:.3f}) (u2: {gross_profit_prod1_usr2:.3f}) (u3: {gross_profit_prod1_usr3:.3f})")
+    print()
+    print (gross_profit_prod1_usr1/user1.expected_profit()[0])

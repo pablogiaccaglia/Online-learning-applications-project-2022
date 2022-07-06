@@ -5,7 +5,9 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+
 np.set_printoptions(threshold=sys.maxsize)
+
 
 class Knapsack:
 
