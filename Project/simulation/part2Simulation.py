@@ -12,10 +12,9 @@ n_budgets = 100
 environment = Environment()
 """ @@@@ ---------------- @@@@ """
 
-
 for day in range(days):
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price)
+    sim_obj = environment.play_one_day(N_user, reference_price)  # object with all the day info
     profit1, profit2, profit3 = sim_obj["profit"]
     noise_alpha = sim_obj["noise"]
 
