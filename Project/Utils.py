@@ -1,6 +1,6 @@
 from random import randint
 import numpy as np
-from Project.Graph import Graph
+from Graph import Graph
 from random import uniform
 
 def get_probabilities(quantity, padding=0.5):
