@@ -7,6 +7,8 @@ import numpy as np
 from Graph import Graph
 from random import uniform
 
+from LearnableGraph import LearnableGraph
+from Graph import Graph
 
 def get_probabilities(quantity, padding):
     """it return a random list of probabilities that sum to 1-padding"""
