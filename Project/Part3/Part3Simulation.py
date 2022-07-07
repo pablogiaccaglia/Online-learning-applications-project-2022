@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Project.Utils as util
-from Project.Campaign import Campaign
-from Project.Product import Product
-from Project.User import User
+import Utils as util
+from Campaign import Campaign
+from Product import Product
+from User import User
 from GTS_Learner import GTS_Learner
 from GPTS_Learner import GPTS_Learner
 from GP_Campaign import GP_Campaign
 from Bidding_Environment import Bidding_Environment
-from Project.Knapsack import Knapsack
+from Knapsack import Knapsack
 
 """ Products SETUP """
 
@@ -156,10 +156,9 @@ for cmp_index in range(0, N_CAMPAIGNS):
         for user_idx, user in enumerate(users):
             prob_user = prob_users[user_idx]
             alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
-            value_per_click = user.expected_profit()[cmp_index]
+            value_per_click = user.expected_profit(np.ones(5))[cmp_index]
             expected_gross_profit += prob_user * alpha * value_per_click
         rewards_sim[cmp_index][budget_idx] = np.single(expected_gross_profit)
-
 
 rewards_sim = reference_price * N_user * rewards_sim  # convert the pure number rewards in euros
 
@@ -175,7 +174,7 @@ gpts_rewards_per_experiment = []
 env = Bidding_Environment(users=users, campaigns=campaigns, prob_users=prob_users)
 for e in range(0, n_experiments):
 
-    #env = Bidding_Environment(users=users, campaigns=campaigns, prob_users=prob_users)
+    # env = Bidding_Environment(users=users, campaigns=campaigns, prob_users=prob_users)
 
     gts_learner = GTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
     gpts_learner = GPTS_Learner(arms=allocated_budget, n_campaigns=N_CAMPAIGNS)
@@ -184,13 +183,14 @@ for e in range(0, n_experiments):
         # Gaussian Thompson Sampling
         pulled_arm = gts_learner.pull_arm()
         rewards_gts = env.get_aggregated_profit(pulled_arm)
-        rewards_gts_euros = [r*N_user*reference_price for r in rewards_gts] # todo: ask others if reference prices should differ
+        rewards_gts_euros = [r * N_user * reference_price for r in
+                             rewards_gts]  # todo: ask others if reference prices should differ
         gts_learner.update(pulled_arm, rewards_gts_euros)
 
         # GP Thompson Sampling
         pulled_arm = gpts_learner.pull_arm()
         rewards_gpts = env.get_aggregated_profit(pulled_arm)
-        rewards_gpts_euros = [r*N_user*reference_price for r in rewards_gpts]
+        rewards_gpts_euros = [r * N_user * reference_price for r in rewards_gpts]
         gpts_learner.update(pulled_arm, rewards_gpts_euros)
 
     gts_rewards_per_experiment.append(gts_learner.collected_rewards.sum(axis=1))
@@ -203,7 +203,7 @@ K = Knapsack(rewards=rewards_sim, budgets=np.array(allocated_budget))
 K.solve()
 opt_arm = K.allocations[-1][-1][1:]
 opt = env.get_aggregated_profit(opt_arm)
-opt_euros = [o*N_user*reference_price for o in opt]
+opt_euros = [o * N_user * reference_price for o in opt]
 
 plt.figure(0)
 plt.ylabel('Regret')
@@ -214,6 +214,6 @@ plt.xlabel('t')
 opt_euros = np.array(opt_euros).sum()
 plt.plot(np.cumsum(np.mean(opt_euros - gts_rewards_per_experiment, axis=0)), 'r')
 plt.plot(np.cumsum(np.mean(opt_euros - gpts_rewards_per_experiment, axis=0)), 'g')
-#aaa = np.mean(opt - gts_rewards_per_experiment, axis=0)
+# aaa = np.mean(opt - gts_rewards_per_experiment, axis=0)
 plt.legend(['GTS', 'GPTS'])
 plt.show()

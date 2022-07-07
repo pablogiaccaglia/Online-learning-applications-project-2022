@@ -1,6 +1,6 @@
 from Learner import Learner
 import numpy as np
-from Project.Knapsack import Knapsack
+from Knapsack import Knapsack
 '''
 
 Remark on the framework: BUDGET ASSIGNMENT(OPTIMIZATION)-> PLAY BUDGETS -> GET COMPOSITE REWARD -> UPDATE -> OPTIMIZATION...

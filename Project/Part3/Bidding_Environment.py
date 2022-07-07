@@ -1,6 +1,6 @@
-from Project.User import User
-from Project.Campaign import Campaign
-from Project.Product import Product
+from User import User
+from Campaign import Campaign
+from Product import Product
 import numpy as np
 
 
@@ -22,7 +22,7 @@ class Bidding_Environment:
             for user_idx, user in enumerate(self.users):
                 prob_user = self.prob_users[user_idx]
                 alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
-                value_per_click = user.expected_profit()[cmp_index]
+                value_per_click = user.expected_profit(np.ones(5))[cmp_index]
                 expected_gross_profit += prob_user * alpha * value_per_click
             rewards_per_campaign.append(expected_gross_profit)
         return rewards_per_campaign

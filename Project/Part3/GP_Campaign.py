@@ -1,4 +1,4 @@
-from Project.Campaign import Campaign
+from Campaign import Campaign
 import numpy as np
 
 '''

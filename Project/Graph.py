@@ -1,4 +1,4 @@
-from Project.Product import Product
+from Product import Product
 
 
 class Graph:

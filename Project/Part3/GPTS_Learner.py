@@ -4,7 +4,7 @@ from sklearn.exceptions import ConvergenceWarning
 from Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Project.Knapsack import Knapsack
+from Knapsack import Knapsack
 
 
 class GPTS_Learner(Learner):
