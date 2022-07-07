@@ -1,4 +1,6 @@
 import numpy as np
+import warnings
+from sklearn.exceptions import ConvergenceWarning
 from Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
@@ -14,7 +16,7 @@ class GPTS_Learner(Learner):
         self.sigmas = np.ones((n_campaigns, self.n_arms)) * 20
         self.pulled_arms = np.array([])  # bids history. One arm for campaign
 
-        alpha = 1.0
+        alpha = 0.5
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
                                            alpha=alpha ** 2,
@@ -36,6 +38,7 @@ class GPTS_Learner(Learner):
         for campaign in range(self.n_campaigns):
             x = (np.atleast_2d(self.pulled_arms)[:, campaign])  # todo: I removed the transpose .T, was it necessary?
             y = np.atleast_2d(self.collected_rewards)[:, campaign]
+            warnings.simplefilter(action='ignore', category=ConvergenceWarning)
             self.gp.fit(X=np.atleast_2d(x).T, y=y)  # TODO: y IS NOT NORMALIZED. DO IT MANUALLY IF NECESSARY
             self.means[campaign, :], self.sigmas[campaign, :] = self.gp.predict(np.atleast_2d(self.arms).T,
                                                                                 return_std=True)

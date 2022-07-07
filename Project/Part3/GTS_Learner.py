@@ -53,7 +53,9 @@ class GTS_Learner(Learner):
             if budget == 0:
                 continue
             arm = self.arms.index(budget)
-            self.means[arm][campaign] = np.mean(self.rewards_per_arm[arm][campaign])
-            n_samples = len(self.rewards_per_arm[arm][campaign])
+            self.means[campaign][arm] = np.mean(np.append(self.means[campaign][arm],
+                                                          self.rewards_per_arm[campaign][arm]))
+            n_samples = len(self.rewards_per_arm[campaign][arm])
             if n_samples > 1:
-                self.sigmas[arm][campaign] = np.std(self.rewards_per_arm[arm][campaign])/n_samples
+                self.sigmas[campaign][arm] = np.std(np.append(self.sigmas[campaign][arm],
+                                                              self.rewards_per_arm[campaign][arm]))/n_samples
