@@ -45,6 +45,7 @@ for day in range(days):
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
     sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,bool_alpha_noise, bool_n_noise)  # object with all the day info
     profit1, profit2, profit3, daily_profit = sim_obj["profit"]
+    p_cmp_1, p_cmp_2, p_cmp_3, p_cmp_4, p_cmp_5, tot_camp = sim_obj["profit_campaign"]
     noise_alpha = sim_obj["noise"]
 
     # aggregated knapsack   --------------------------------------------
