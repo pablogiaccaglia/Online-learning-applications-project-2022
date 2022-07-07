@@ -138,32 +138,8 @@ class Environment:
         noise_alpha = self.noise_alpha
         exp_number_noise = self.exp_number_noise
 
-        p1 = self.prob_users[0]
-        p2 = self.prob_users[1]
-        p3 = self.prob_users[2]
-        u1 = self.users[0]
-        u2 = self.users[1]
-        u3 = self.users[2]
-        profit_u1 = 0
-        profit_u2 = 0
-        profit_u3 = 0
         step_k = 15  # set step size for knapsack
         n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
-
-        for i, cmp in enumerate(self.campaigns):
-            # can be read: expected profit with respect the total number of users and the reference price
-            profit_u1 += p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * \
-                         u1.expected_profit(exp_number_noise[0])[i]
-            profit_u2 += p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * \
-                         u2.expected_profit(exp_number_noise[0])[i]
-            profit_u3 += p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
-                         u3.expected_profit(exp_number_noise[0])[i]
-
-        # convert the pure number in euro
-        profit_u1_euro = profit_u1 * n_users * reference_price
-        profit_u2_euro = profit_u2 * n_users * reference_price
-        profit_u3_euro = profit_u3 * n_users * reference_price
-        daily_profit_euro = profit_u1_euro + profit_u2_euro + profit_u3_euro
 
         # knapsack disaggregated reward computation
         rewards_k, avail_budgets = self.__rewards_knapsack(n_users,
@@ -181,10 +157,11 @@ class Environment:
                                                                               n_budgets=n_budget_k)
 
         return {
-            "profit": (profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro),
+            "profit": self.__profit_per_user(n_users, reference_price),
             "noise": (noise_alpha, exp_number_noise),
             "reward_k": (rewards_k, avail_budgets),
             "reward_k_agg": (rewards_k_agg, avail_budgets_agg),
+            "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
         }
 
     def replicate_last_day(self, n_users, reference_price, alpha_noise=False, n_noise=False):
@@ -197,31 +174,10 @@ class Environment:
         else:
             exp_number_noise = util.no_noise_matrix()
 
-        p1 = self.prob_users[0]
-        p2 = self.prob_users[1]
-        p3 = self.prob_users[2]
-        u1 = self.users[0]
-        u2 = self.users[1]
-        u3 = self.users[2]
-        profit_u1 = 0
-        profit_u2 = 0
-        profit_u3 = 0
-
-        for i, cmp in enumerate(self.campaigns):
-            # can be read: expected profit with respect the total number of users and the reference price
-            profit_u1 += p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * u1.expected_profit()[i]
-            profit_u2 += p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * u2.expected_profit()[i]
-            profit_u3 += p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * u3.expected_profit()[i]
-
-        # convert the pure number in euro
-        profit_u1_euro = profit_u1 * n_users * reference_price
-        profit_u2_euro = profit_u2 * n_users * reference_price
-        profit_u3_euro = profit_u3 * n_users * reference_price
-        daily_profit_euro = profit_u1_euro + profit_u2_euro + profit_u3_euro
-
         return {
-            "profit": (profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro),
-            "noise": (noise_alpha, exp_number_noise)
+            "profit": self.__profit_per_user(n_users, reference_price),
+            "noise": (noise_alpha, exp_number_noise),
+            "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
         }
 
     def get_core_entities(self):
@@ -255,7 +211,8 @@ class Environment:
 
         return rewards, available_budget
 
-    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5, n_budgets=10):
+    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5,
+                                      n_budgets=10):
 
         # print("*" * 25 + " Knapsack rewards " + "*" * 30)
 
@@ -277,3 +234,64 @@ class Environment:
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
 
         return rewards, available_budget
+
+    def __profit_per_user(self, n_users, reference_price):
+        noise_alpha = self.noise_alpha
+        exp_number_noise = self.exp_number_noise
+        p1 = self.prob_users[0]
+        p2 = self.prob_users[1]
+        p3 = self.prob_users[2]
+        u1 = self.users[0]
+        u2 = self.users[1]
+        u3 = self.users[2]
+        profit_u1 = 0
+        profit_u2 = 0
+        profit_u3 = 0
+
+        for i, cmp in enumerate(self.campaigns):
+            # can be read: expected profit with respect the total number of users and the reference price
+            profit_u1 += p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * \
+                         u1.expected_profit(exp_number_noise[0])[i]
+            profit_u2 += p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * \
+                         u2.expected_profit(exp_number_noise[0])[i]
+            profit_u3 += p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
+                         u3.expected_profit(exp_number_noise[0])[i]
+
+        # convert the pure number in euro
+        profit_u1_euro = profit_u1 * n_users * reference_price
+        profit_u2_euro = profit_u2 * n_users * reference_price
+        profit_u3_euro = profit_u3 * n_users * reference_price
+        daily_profit_euro = profit_u1_euro + profit_u2_euro + profit_u3_euro
+
+        return profit_u1_euro, profit_u1_euro, profit_u1_euro, daily_profit_euro
+
+    def __profit_per_campaign(self, n_users, reference_price):
+        noise_alpha = self.noise_alpha
+        exp_number_noise = self.exp_number_noise
+        p1 = self.prob_users[0]
+        p2 = self.prob_users[1]
+        p3 = self.prob_users[2]
+        u1 = self.users[0]
+        u2 = self.users[1]
+        u3 = self.users[2]
+        campaign_profits = []
+
+        for i, cmp in enumerate(self.campaigns):
+            # can be read: expected profit with respect the total number of users and the reference price
+            profit_u1 = p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * \
+                         u1.expected_profit(exp_number_noise[0])[i]
+            profit_u2 = p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * \
+                         u2.expected_profit(exp_number_noise[0])[i]
+            profit_u3 = p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
+                         u3.expected_profit(exp_number_noise[0])[i]
+
+            campaign_profits.append(profit_u1 + profit_u2 + profit_u3)
+
+        # convert the pure number in euro
+        for i, cmp_profit in enumerate(campaign_profits):
+            euro_val = cmp_profit * n_users * reference_price
+            campaign_profits[i] = euro_val
+
+        campaign_profits.append(np.sum(campaign_profits))
+
+        return tuple(campaign_profits)
