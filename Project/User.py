@@ -18,7 +18,7 @@ class User:
         self.exp_number_purchase = exp_number_purchase
 
     def __recursive_visit(self, graph, root_id, node, node_prob, prob_list, purchased_set, secondary_list, expected_profits,
-                          user, debug):
+                          user, exp_number_noise, debug):
         """ DFS visit of every node: the expected profit array is updated for every successful payment,
             in case of not purchase the navigation is interrupted """
 
@@ -32,11 +32,11 @@ class User:
             prob_list.append(user.lmbda)
 
         # decide whether to buy
-        if (user.reservation_prices[node.id - 1] >= node.price):
+        if user.reservation_prices[node.id - 1] >= node.price:
 
             prob_to_be_here = np.prod(np.array(prob_list))  # cumulative probability to be in this node of the graph
             expected_profits[root_id] += prob_to_be_here * node.price * user.exp_number_purchase[
-                node.id - 1]  # compute profit of this purchase
+                node.id - 1] * exp_number_noise[node.id - 1]  # compute profit of this purchase
             purchased_set.add(node)
 
             if debug:
@@ -55,6 +55,7 @@ class User:
                     secondary_list=node.secondary_list,
                     expected_profits=expected_profits,
                     user=user,
+                    exp_number_noise=exp_number_noise,
                     debug=debug
                 )
 
@@ -65,7 +66,7 @@ class User:
     def set_graph(self, weighted_graph):
         self.weighted_graph = weighted_graph
 
-    def expected_profit(self, debug=False):
+    def expected_profit(self, exp_number_noise, debug=False):
         nodes = self.weighted_graph.get_all_nodes()
         expected_profits = [0, 0, 0, 0, 0]
 
@@ -83,7 +84,8 @@ class User:
                                    secondary_list=[node.id, -1],
                                    expected_profits=expected_profits,
                                    user=self,
-                                   debug=debug
+                                   debug=debug,
+                                   exp_number_noise=exp_number_noise
                                    )
 
             # self._simulation_done = True

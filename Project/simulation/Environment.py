@@ -47,7 +47,6 @@ class Environment:
         ]
 
         # plot alpha functions
-        self.noise_alpha = []
         do_plot = False
         test_alpha = alpha_usr3
         img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
@@ -116,16 +115,29 @@ class Environment:
 
         """ Extended campaign setup """
         # TODO develop ideal situation when n_user * n_product campaigns are available
+        # edit: abort this passage since the disaggregated knspsack is performing worse
 
         self.campaigns = [cmp1, cmp2, cmp3, cmp4, cmp5]
         self.competitor_alpha = np.sum(alpha_i_max)
         self.users = [user1, user2, user3]
         self.prob_users = [prob_user1, prob_user2, prob_user3]
+        self.noise_alpha = []
+        self.exp_number_noise = []
 
-    def play_one_day(self, n_users, reference_price, daily_budget):
-        # TODO add noise for N items purchased by users
-        self.noise_alpha = util.noise_matrix_alpha()  # generate noisy contractions matrix for alpha functions
+    def play_one_day(self, n_users, reference_price, daily_budget, alpha_noise=False, n_noise=False):
+        # generate noisy contractions matrix for alpha functions and exp number of purchase
+        if alpha_noise:
+            self.noise_alpha = util.noise_matrix_alpha()
+        else:
+            self.noise_alpha = util.no_noise_matrix()
+        if n_noise:
+            self.exp_number_noise = util.noise_matrix_alpha(max_reduction=0.25, max_global_influence=0)
+        else:
+            self.exp_number_noise = util.no_noise_matrix()
+
         noise_alpha = self.noise_alpha
+        exp_number_noise = self.exp_number_noise
+
         p1 = self.prob_users[0]
         p2 = self.prob_users[1]
         p3 = self.prob_users[2]
@@ -135,14 +147,17 @@ class Environment:
         profit_u1 = 0
         profit_u2 = 0
         profit_u3 = 0
-        step_k = 15 # set step size for knapsack
-        n_budget_k = int(daily_budget/step_k)  # adapt columns number for knapsack
+        step_k = 15  # set step size for knapsack
+        n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
 
         for i, cmp in enumerate(self.campaigns):
             # can be read: expected profit with respect the total number of users and the reference price
-            profit_u1 += p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * u1.expected_profit()[i]
-            profit_u2 += p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * u2.expected_profit()[i]
-            profit_u3 += p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * u3.expected_profit()[i]
+            profit_u1 += p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * \
+                         u1.expected_profit(exp_number_noise[0])[i]
+            profit_u2 += p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * \
+                         u2.expected_profit(exp_number_noise[0])[i]
+            profit_u3 += p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
+                         u3.expected_profit(exp_number_noise[0])[i]
 
         # convert the pure number in euro
         profit_u1_euro = profit_u1 * n_users * reference_price
@@ -154,25 +169,34 @@ class Environment:
         rewards_k, avail_budgets = self.__rewards_knapsack(n_users,
                                                            reference_price,
                                                            noise_alpha,
+                                                           exp_number_noise=exp_number_noise,
                                                            step_size=step_k,
                                                            n_budgets=n_budget_k)
         # knapsack aggregated reward computation
         rewards_k_agg, avail_budgets_agg = self.__rewards_knapsack_aggregated(n_users,
                                                                               reference_price,
                                                                               noise_alpha,
+                                                                              exp_number_noise=exp_number_noise,
                                                                               step_size=step_k,
                                                                               n_budgets=n_budget_k)
 
         return {
             "profit": (profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro),
-            "noise": noise_alpha,
+            "noise": (noise_alpha, exp_number_noise),
             "reward_k": (rewards_k, avail_budgets),
             "reward_k_agg": (rewards_k_agg, avail_budgets_agg),
         }
 
-    def replicate_last_day(self, n_users, reference_price, daily_budget):
+    def replicate_last_day(self, n_users, reference_price, alpha_noise=False, n_noise=False):
+        if alpha_noise:
+            noise_alpha = self.noise_alpha
+        else:
+            noise_alpha = util.no_noise_matrix()
+        if n_noise:
+            exp_number_noise = self.exp_number_noise
+        else:
+            exp_number_noise = util.no_noise_matrix()
 
-        noise_alpha = self.noise_alpha  # generate noisy contractions matrix for alpha functions
         p1 = self.prob_users[0]
         p2 = self.prob_users[1]
         p3 = self.prob_users[2]
@@ -197,7 +221,7 @@ class Environment:
 
         return {
             "profit": (profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro),
-            "noise": noise_alpha
+            "noise": (noise_alpha, exp_number_noise)
         }
 
     def get_core_entities(self):
@@ -207,7 +231,7 @@ class Environment:
         self.campaigns[index].change_budget(budget)
         self.allocated_budget[index] = budget
 
-    def __rewards_knapsack(self, n_users, reference_price, noise_alpha, step_size=5, n_budgets=10):
+    def __rewards_knapsack(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5, n_budgets=10):
 
         # print("*" * 25 + " Knapsack rewards " + "*" * 30)
 
@@ -224,14 +248,14 @@ class Environment:
                     alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
                             noise_alpha[user_idx][
                                 cmp_index]
-                    value_per_click = user.expected_profit()[cmp_index]
+                    value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
                     expected_gross_profit = self.prob_users[
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index * n_classes + user_idx][budget_idx] = np.single(expected_gross_profit)
 
         return rewards, available_budget
 
-    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, step_size=5, n_budgets=10):
+    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5, n_budgets=10):
 
         # print("*" * 25 + " Knapsack rewards " + "*" * 30)
 
@@ -247,7 +271,7 @@ class Environment:
                     alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
                             noise_alpha[user_idx][
                                 cmp_index]
-                    value_per_click = user.expected_profit()[cmp_index]
+                    value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
                     expected_gross_profit = self.prob_users[
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
