@@ -5,12 +5,14 @@ from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
 """ @@@@ simulation SETUP @@@@ """
-days = 15
+days = 5
 N_user = 1000  # reference for what alpha = 1 refers to
 reference_price = 3.5
 daily_budget = 1500
 environment = Environment()
 
+bool_alpha_noise = False
+bool_n_noise = True
 printBasicDebug = False
 printKnapsackInfo = False
 runAggregated = True  # mutual exclusive with run disaggregated
@@ -41,7 +43,7 @@ for day in range(days):
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget)  # object with all the day info
+    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,bool_alpha_noise, bool_n_noise)  # object with all the day info
     profit1, profit2, profit3, daily_profit = sim_obj["profit"]
     noise_alpha = sim_obj["noise"]
 
@@ -62,8 +64,10 @@ for day in range(days):
             print(f"best allocation: {alloc}, total budget: {sum(alloc)}")
             print(f"reward: {reward}")
             set_budgets_env(alloc)
-            sim_obj_2 = environment.replicate_last_day(N_user, reference_price,
-                                                       daily_budget)  # object with all the day info
+            sim_obj_2 = environment.replicate_last_day(N_user,
+                                                       reference_price,
+                                                       bool_n_noise,
+                                                       bool_n_noise)  # object with all the day info
             profit1, profit2, profit3, daily_profit = sim_obj_2["profit"]
             print(
                 f"test allocation on env:\n\t || total:{daily_profit:.2f}€ || u1:{profit1:.2f}€ || u2:{profit2:.2f}€ || u3:{profit3:.2f}€")
