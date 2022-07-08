@@ -13,7 +13,7 @@ class CombGTS_Learner:
         # distribute arms uniformly in range (0, maxbudget)
         self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
         # initialize one learner for each campaign
-        mean = 100
+        mean = 300
         var = 30
         for _ in range(n_campaigns):
             self.gts_learners.append(GTS_LearnerVanilla(self.arms, mean, var))
@@ -37,12 +37,12 @@ class CombGTS_Learner:
 
     def update_observations(self, super_arm, env_rewards):
         index_arm = self.__indexes_super_arm(super_arm)
-        print(super_arm)
+        """print(super_arm)
         print(index_arm)
-        print(env_rewards)
+        print(env_rewards)"""
         for i, learner in enumerate(self.gts_learners):
             # for each learner update the net reward of the selected arm
-            net_reward = env_rewards[i] #- super_arm[i]
+            net_reward = env_rewards[i] - super_arm[i]
             learner.update(index_arm[i], net_reward)
 
     def __indexes_super_arm(self, super_arm):

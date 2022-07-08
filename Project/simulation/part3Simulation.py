@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 days = 100
 N_user = 300  # reference for what alpha = 1 refers to
 reference_price = 2.0
-daily_budget = 400
+daily_budget = 900
+n_arms = 15
 environment = Environment()
 
-bool_alpha_noise = True
+bool_alpha_noise = False
 bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = True
@@ -105,7 +106,6 @@ for day in range(days):
     gts_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # solve comb problem for tomorrow
     super_arm = comb_gts.pull_super_arm()
-    print(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # -----------------------------------------------------------------
     if day % 20 == 0:
         print(f"super arm:  {super_arm}")

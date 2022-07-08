@@ -52,7 +52,6 @@ for day in range(days):
     if runAggregated:
         rewards, available_budget = sim_obj["reward_k_agg"]
         row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), 1, available_budget)
-
         K = Knapsack(rewards=rewards, budgets=np.array(available_budget))
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
         K.solve()
