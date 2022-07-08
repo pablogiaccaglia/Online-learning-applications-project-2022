@@ -16,7 +16,7 @@ daily_budget = 500
 n_arms = 100
 environment = Environment()
 
-bool_alpha_noise = False
+bool_alpha_noise = True
 bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = True
@@ -53,7 +53,7 @@ def set_budgets_arm_env(s_arm):
 
 rewards_knapsack_agg = []
 
-gts_rewards = []
+learner_rewards = []
 # solve comb problem for tomorrow
 super_arm = comb_learner.pull_super_arm()
 
@@ -106,7 +106,7 @@ for day in range(days):
                                                bool_n_noise)
 
     comb_learner.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
-    gts_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
+    learner_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
@@ -117,11 +117,18 @@ print(f"super arm:  {super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
 print(f"\n***** FINAL RESULT *****")
+print(f"days simulated: {days}")
 print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
-print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
 print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"Learner profit:\t {sum(learner_rewards):.4f}€")
+print("----------------------------")
+print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
+print(f"\tstd:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"average reward:\t {np.mean(learner_rewards):.4f}€")
+print(f"\tstd:\t {np.std(learner_rewards):.4f}€")
+print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(learner_rewards)):.4f}€")
+print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(learner_rewards)):.4f}€")
 
-print(f"GTS profit:\t {sum(gts_rewards):.4f}€")
 plt.close()
 d = np.linspace(0, len(rewards_knapsack_agg), len(rewards_knapsack_agg))
 
@@ -131,18 +138,23 @@ axs = axss.flatten()
 axs[0].set_xlabel("days")
 axs[0].set_ylabel("reward")
 axs[0].plot(d, rewards_knapsack_agg)
-axs[0].plot(d, gts_rewards)
+axs[0].plot(d, learner_rewards)
 
 axs[1].set_xlabel("days")
 axs[1].set_ylabel("cumulative reward")
 axs[1].plot(d, np.cumsum(rewards_knapsack_agg))
-axs[1].plot(d, np.cumsum(gts_rewards))
+axs[1].plot(d, np.cumsum(learner_rewards))
 
 axs[2].set_xlabel("days")
-axs[2].set_ylabel("gts cumulative regret")
-axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(gts_rewards)))
+axs[2].set_ylabel("cumulative regret")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(learner_rewards)))
 
 axs[3].set_xlabel("days")
-axs[3].set_ylabel("gts regret")
-axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(gts_rewards))
+axs[3].set_ylabel("regret")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(learner_rewards))
 plt.show()
+
+# TODO
+#  1) graphs to show learned curve of profits
+#  2) same simulation but comparing 2 algorithms
+#  3) theoretical upper bound regret
