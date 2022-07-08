@@ -1,18 +1,19 @@
 import numpy as np
 import pandas as pd
 from Knapsack import Knapsack
-from Part3.CombGTS_Learner import CombGTS_Learner
-from Part3.GPTS_Learner import GPTS_Learner
 from Part3.GTS_Learner import GTS_Learner
+from Part3.GPTS_Learner import GPTS_Learner
+from Part3.CombWrapper import CombWrapper
+from Part3.GPTS_Learner import GPTS_Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
 """ @@@@ simulation SETUP @@@@ """
-days = 100
+days = 80
 N_user = 300  # reference for what alpha = 1 refers to
 reference_price = 2.0
-daily_budget = 900
-n_arms = 15
+daily_budget = 500
+n_arms = 100
 environment = Environment()
 
 bool_alpha_noise = False
@@ -20,6 +21,9 @@ bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
+""" Change here the wrapper for the core bandit algorithm """
+# comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
+comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
 """ @@@@ ---------------- @@@@ """
 
 
@@ -49,10 +53,9 @@ def set_budgets_arm_env(s_arm):
 
 rewards_knapsack_agg = []
 
-comb_gts = CombGTS_Learner(5, 15, daily_budget)
 gts_rewards = []
 # solve comb problem for tomorrow
-super_arm = comb_gts.pull_super_arm()
+super_arm = comb_learner.pull_super_arm()
 
 for day in range(days):
     if printBasicDebug:
@@ -102,10 +105,10 @@ for day in range(days):
                                                bool_n_noise,
                                                bool_n_noise)
 
-    comb_gts.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
+    comb_learner.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
     gts_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # solve comb problem for tomorrow
-    super_arm = comb_gts.pull_super_arm()
+    super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
     if day % 20 == 0:
         print(f"super arm:  {super_arm}")

@@ -1,49 +1,48 @@
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
-from Learner import Learner
+from Part3.Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from Knapsack import Knapsack
+from Part3.Learner import Learner
 
 
 class GPTS_Learner(Learner):
-    def __init__(self, arms, n_campaigns):  # arms are the budgets (e.g 0,10,20...)
-        self.n_arms = len(arms)  # there should be another solution to pass from numerical budget to index
-        super().__init__(self.n_arms, n_campaigns)
+    def __init__(self, arms, n_campaigns, prior_mean, prior_sigma=1):  # arms are the budgets (e.g 0,10,20...)
+        super().__init__(len(arms))
+        self.n_arms = len(arms)
         self.arms = arms
-        self.means = np.ones((n_campaigns, self.n_arms)) * 30  # table of rewards for knapsack. Probably not zero??
-        self.sigmas = np.ones((n_campaigns, self.n_arms)) * 20
-        self.pulled_arms = np.array([])  # bids history. One arm for campaign
+        self.means = np.ones(self.n_arms) * prior_mean
+        self.sigmas = np.ones(self.n_arms) * prior_sigma
+        self.pulled_arms = []  # One arm for campaign
 
         alpha = 0.5
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
                                            alpha=alpha ** 2,
-                                           #normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
+                                           # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
                                            #                          USING IT RIGHT. NORMALIZE Y MANUALLY
                                            n_restarts_optimizer=9)
 
-    def update_observations(self, super_arm, rewards):
-        # I believe rewards_per_arm is useless here
-        # for campaign, budget in enumerate(super_arm):
-        #     self.rewards_per_arm[campaign][self.arms.index(budget)].append(rewards[campaign])
-        super().update_observations(rewards)
-        if not self.pulled_arms.any():
+    def update_observations(self, pulled_arm, reward):
+        super().update_observations(pulled_arm, reward)
+        self.pulled_arms.append(self.arms[pulled_arm])
+        """        if not self.pulled_arms.any():
             self.pulled_arms = np.append(self.pulled_arms, super_arm)
         else:
-            self.pulled_arms = np.append(np.atleast_2d(self.pulled_arms), np.atleast_2d(super_arm), axis=0)
+            self.pulled_arms = np.append(np.atleast_2d(self.pulled_arms), np.atleast_2d(super_arm), axis=0)"""
 
     def update_model(self):
-        for campaign in range(self.n_campaigns):
-            x = (np.atleast_2d(self.pulled_arms)[:, campaign])  # todo: I removed the transpose .T, was it necessary?
-            y = np.atleast_2d(self.collected_rewards)[:, campaign]
-            warnings.simplefilter(action='ignore', category=ConvergenceWarning)
-            self.gp.fit(X=np.atleast_2d(x).T, y=y)  # TODO: y IS NOT NORMALIZED. DO IT MANUALLY IF NECESSARY
-            self.means[campaign, :], self.sigmas[campaign, :] = self.gp.predict(np.atleast_2d(self.arms).T,
-                                                                                return_std=True)
-            # force sigma>0. It shouldn't be an issue anyway
-            self.sigmas[campaign, :] = np.maximum(self.sigmas[campaign, :], 1e-2)
+        x = np.atleast_2d(self.pulled_arms).T
+        y = self.collected_rewards
+        warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+        self.gp.fit(x, y)  # TODO: y IS NOT NORMALIZED. DO IT MANUALLY IF NECESSARY
+        self.means, self.sigmas = self.gp.predict(
+            np.atleast_2d(self.arms).T,
+            return_std=True)
+        # force sigma>0. It shouldn't be an issue anyway
+        self.sigmas = np.maximum(self.sigmas, 1e-2)
 
     def update(self, pulled_super_arm, rewards):
         self.t += 1
@@ -52,7 +51,7 @@ class GPTS_Learner(Learner):
 
     # Same as gts_learner
     def pull_arm(self) -> np.array:
-        k = Knapsack(rewards=np.array(np.random.normal(self.means, self.sigmas).clip(0.0)), budgets=np.array(self.arms))
-        k.solve()
-        super_arm = k.allocations[-1][-1][1:]  # last row of allocations minus the no campaign case
-        return super_arm
+        """ Pull an arm and the set of value of all the arms"""
+        arms_value = np.random.normal(self.means, self.sigmas)
+        idx = np.argmax(arms_value)
+        return idx, arms_value

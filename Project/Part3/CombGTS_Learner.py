@@ -1,4 +1,4 @@
-from Part3.GTS_Learner_Vanilla import GTS_LearnerVanilla
+from Part3.GTS_Learner import GTS_Learner
 from Part3.Learner import Learner
 import numpy as np
 from Knapsack import Knapsack
@@ -16,7 +16,7 @@ class CombGTS_Learner:
         mean = 300
         var = 30
         for _ in range(n_campaigns):
-            self.gts_learners.append(GTS_LearnerVanilla(self.arms, mean, var))
+            self.gts_learners.append(GTS_Learner(self.arms, mean, var))
 
     def pull_super_arm(self) -> np.array:
         """ Return an array budget with the suggested allocation of budgets """
