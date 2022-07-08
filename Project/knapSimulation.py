@@ -4,6 +4,8 @@ import Utils as util
 from Campaign import Campaign
 from Product import Product
 from User import User
+import pandas as pd
+from Knapsack import Knapsack
 
 """ Products SETUP """
 
@@ -65,6 +67,8 @@ prob_user1 = 0.25
 prob_user2 = 0.45
 prob_user3 = 0.30
 
+prob_users = [prob_user1, prob_user2, prob_user3]
+
 # base         [0.50, 0.625, 0.75, 0.875, 1.00]
 res_prices_1 = [0.60, 0.725, 0.65, 0.975, 1.10]
 res_prices_2 = [0.60, 0.525, 0.85, 0.775, 1.10]
@@ -74,16 +78,12 @@ exp_number_purchase_1 = [2.0, 2.0, 2.0, 2.0, 3.5]  # 2   - 3.5
 exp_number_purchase_2 = [1.0, 1.0, 1.0, 1.0, 1.5]  # 1   - 1.5
 exp_number_purchase_3 = [1.5, 1.5, 1.5, 1.5, 2.0]  # 1.5 - 2
 
-graph1 = util.random_fully_connected_graph(products)
-graph2 = util.random_fully_connected_graph(products)
-graph3 = util.random_fully_connected_graph(products)
-
 user1 = User(id=1,
              reservation_prices=res_prices_1,
              lmbda=0.8,
              alpha_functions=alpha_usr1,
              exp_number_purchase=exp_number_purchase_1,
-             weighted_graph=graph1,
+             weighted_graph=util.random_fully_connected_graph(products)
              )
 
 user2 = User(id=2,
@@ -91,7 +91,7 @@ user2 = User(id=2,
              lmbda=0.5,
              alpha_functions=alpha_usr2,
              exp_number_purchase=exp_number_purchase_2,
-             weighted_graph=graph2,
+             weighted_graph=util.random_fully_connected_graph(products)
              )
 
 user3 = User(id=3,
@@ -99,14 +99,14 @@ user3 = User(id=3,
              lmbda=0.65,
              alpha_functions=alpha_usr3,
              exp_number_purchase=exp_number_purchase_3,
-             weighted_graph=graph3,
+             weighted_graph=util.random_fully_connected_graph(products),
              )
 
 users = [user1, user2, user3]
 
 """ Campaigns SETUP """
 alpha_i_max = [0.5, 0.5, 0.3, 0.4, 0.3]
-allocated_budget = [10, 20, 30, 40, 50]  # range 0-100
+allocated_budget = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # range 0-100
 competitor_alpha = np.sum(alpha_i_max)
 
 cmp1 = Campaign(1, allocated_budget[0], alpha_i_max=alpha_i_max[0])
@@ -162,3 +162,62 @@ for day in range(days):
     print(
         f"with {allocated_budget} budget -> alpha1: {alpha_1:.3f}/{alpha_i_max[0]}\t Profit {gross_profit_prod1:.3f}"
         f"\t(u1: {gross_profit_prod1_usr1:.3f}) (u2: {gross_profit_prod1_usr2:.3f}) (u3: {gross_profit_prod1_usr3:.3f})")"""
+
+""" Knapsack optimization simulation """
+
+""" Some constants """
+
+N_CLASSES = len(users)
+N_CAMPAIGNS = len(products)
+N_BUDGETS = len(allocated_budget)
+
+print("*" * 30 + " Knapsack simulation " + "*" * 35)
+print()
+
+rewards = np.zeros((N_CLASSES * N_CAMPAIGNS, N_BUDGETS), dtype=np.single)
+
+for cmp_index in range(0, N_CAMPAIGNS):
+
+    for budget_idx in range(0, N_BUDGETS):
+
+        """ Each campaign is observed with all the budget values """
+        cmp = Campaign(id=cmp_index + 1,
+                       allocated_budget=allocated_budget[budget_idx],
+                       alpha_i_max=alpha_i_max[cmp_index])
+
+        for user_idx, user in enumerate(users):
+            prob_user = prob_users[user_idx]
+            alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index])
+            value_per_click = user.expected_profit()[cmp_index]
+            expected_gross_profit = prob_user * alpha * value_per_click
+            rewards[cmp_index * N_CLASSES + user_idx][budget_idx] = np.single(expected_gross_profit)
+
+col_labels = [str(budget) for budget in allocated_budget]
+
+rewards = reference_price * N_user * rewards  # convert the pure number rewards in euros
+
+print("*" * 10 + " Independent rewards Table " + "*" * 10)
+
+row_label_rewards = []
+row_labels_dp_table = ['0']
+for i in range(1, N_CAMPAIGNS + 1):
+    for j in range(1, N_CLASSES + 1):
+        # Cij -> campaign i and user j
+        row_label_rewards.append("C" + str(i) + str(j))
+        row_labels_dp_table.append("+C" + str(i) + str(j))
+
+print(pd.DataFrame(rewards, columns=col_labels, index=row_label_rewards))
+
+K = Knapsack(rewards=rewards, budgets=np.array(allocated_budget))
+
+K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
+K.solve()
+
+print()
+
+K.pretty_print_dp_table()  # prints the final dynamic programming table
+
+print()
+
+K.pretty_print_output(
+    print_last_row_only=False)  # prints information about last row of the table, including allocations
