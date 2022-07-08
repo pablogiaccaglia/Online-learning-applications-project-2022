@@ -138,7 +138,7 @@ class Environment:
         noise_alpha = self.noise_alpha
         exp_number_noise = self.exp_number_noise
 
-        step_k = 15  # set step size for knapsack
+        step_k = 5  # set step size for knapsack
         n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
 
         # knapsack disaggregated reward computation
@@ -195,7 +195,10 @@ class Environment:
         n_classes = len(self.users)
         n_campaigns = len(self.products)
 
-        rewards = np.zeros((n_classes * n_campaigns, n_budgets), dtype=np.single)
+        rewards = []
+        for _ in range(n_classes * n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
 
         for cmp_index in range(n_campaigns):
             for budget_idx in range(n_budgets):
@@ -219,7 +222,10 @@ class Environment:
         available_budget = [step_size * (i + 1) for i in range(n_budgets)]
         n_campaigns = len(self.products)
 
-        rewards = np.zeros((n_campaigns, n_budgets), dtype=np.single)
+        rewards = []
+        for _ in range(n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
 
         for cmp_index in range(n_campaigns):
             for budget_idx in range(n_budgets):
@@ -279,11 +285,11 @@ class Environment:
         for i, cmp in enumerate(self.campaigns):
             # can be read: expected profit with respect the total number of users and the reference price
             profit_u1 = p1 * noise_alpha[0][i] * cmp.get_alpha_i(u1.alpha_functions[i]) * \
-                         u1.expected_profit(exp_number_noise[0])[i]
+                        u1.expected_profit(exp_number_noise[0])[i]
             profit_u2 = p2 * noise_alpha[1][i] * cmp.get_alpha_i(u2.alpha_functions[i]) * \
-                         u2.expected_profit(exp_number_noise[0])[i]
+                        u2.expected_profit(exp_number_noise[0])[i]
             profit_u3 = p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
-                         u3.expected_profit(exp_number_noise[0])[i]
+                        u3.expected_profit(exp_number_noise[0])[i]
 
             campaign_profits.append(profit_u1 + profit_u2 + profit_u3)
 
