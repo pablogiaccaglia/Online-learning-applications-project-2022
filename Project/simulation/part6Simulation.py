@@ -5,6 +5,7 @@ from Part3.GTS_Learner import GTS_Learner
 from Part3.GPTS_Learner import GPTS_Learner
 from Part3.CombWrapper import CombWrapper
 from Part3.GPTS_Learner import GPTS_Learner
+from Part6.UCB1Learner import UCB1Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
@@ -23,7 +24,7 @@ printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
 # comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
-comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
+comb_learner = CombWrapper(UCB1Learner, 5, n_arms, daily_budget)
 """ @@@@ ---------------- @@@@ """
 
 
@@ -53,7 +54,7 @@ def set_budgets_arm_env(s_arm):
 
 rewards_knapsack_agg = []
 
-gts_rewards = []
+ucb1_rewards = []
 # solve comb problem for tomorrow
 super_arm = comb_learner.pull_super_arm()
 
@@ -106,7 +107,7 @@ for day in range(days):
                                                bool_n_noise)
 
     comb_learner.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
-    gts_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
+    ucb1_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
@@ -121,7 +122,7 @@ print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
 print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
 print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
 
-print(f"GTS profit:\t {sum(gts_rewards):.4f}€")
+print(f"GTS profit:\t {sum(ucb1_rewards):.4f}€")
 plt.close()
 d = np.linspace(0, len(rewards_knapsack_agg), len(rewards_knapsack_agg))
 
@@ -131,18 +132,18 @@ axs = axss.flatten()
 axs[0].set_xlabel("days")
 axs[0].set_ylabel("reward")
 axs[0].plot(d, rewards_knapsack_agg)
-axs[0].plot(d, gts_rewards)
+axs[0].plot(d, ucb1_rewards)
 
 axs[1].set_xlabel("days")
 axs[1].set_ylabel("cumulative reward")
 axs[1].plot(d, np.cumsum(rewards_knapsack_agg))
-axs[1].plot(d, np.cumsum(gts_rewards))
+axs[1].plot(d, np.cumsum(ucb1_rewards))
 
 axs[2].set_xlabel("days")
-axs[2].set_ylabel("gts cumulative regret")
-axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(gts_rewards)))
+axs[2].set_ylabel("CUCB1 cumulative regret")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(ucb1_rewards)))
 
 axs[3].set_xlabel("days")
-axs[3].set_ylabel("gts regret")
-axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(gts_rewards))
+axs[3].set_ylabel("CUCB1 regret")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(ucb1_rewards))
 plt.show()

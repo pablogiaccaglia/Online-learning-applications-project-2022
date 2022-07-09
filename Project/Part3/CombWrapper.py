@@ -16,6 +16,7 @@ class CombWrapper:
 
     (as GTS_Learner class)
     """
+
     def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget):  # arms are the budgets (e.g 0,10,20...)
         self.learners = []
         self.max_b = max_budget
@@ -33,9 +34,9 @@ class CombWrapper:
         for learner in self.learners:
             idx_max, all_arms = learner.pull_arm()
             rewards.append(all_arms)
-        #print(f"reward matrix \n{rewards}")
+        # print(f"reward matrix \n{rewards}")
         budgets = np.array(self.arms)
-        k = Knapsack(rewards=np.array(rewards), budgets=budgets)
+        k = Knapsack(rewards = np.array(rewards), budgets = budgets)
         k.solve()
         arg_max = np.argmax(k.get_output()[0][-1])
         alloc = k.get_output()[1][-1][arg_max]

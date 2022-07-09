@@ -20,7 +20,7 @@ import numpy as np
 
 
 class Learner:
-    def __init__(self, n_arms):
+    def __init__(self, n_arms, change_detection = False):
         self.n_arms = n_arms
         self.t = 0  # current round variable
         self.rewards_per_arm = x = [[] for _ in range(n_arms)]
