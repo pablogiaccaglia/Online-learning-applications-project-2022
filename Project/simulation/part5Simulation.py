@@ -57,8 +57,8 @@ def set_budgets_arm_env(s_arm):
 
 """ 
 Run montecarlo for each user and return :
-    ->estimation-fully-connected
-    ->estimation-2-neighbours
+    -> estimation-fully-connected
+    -> estimation-2-neighbours
     -> true graph
 """
 
