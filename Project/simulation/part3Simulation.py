@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import progressbar
+
 from Knapsack import Knapsack
 from Part3.GTS_Learner import GTS_Learner
 from Part3.GPTS_Learner import GPTS_Learner
@@ -8,12 +10,14 @@ from Part3.GPTS_Learner import GPTS_Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
+# this simulation can be used for both part 2 and 3
+
 """ @@@@ simulation SETUP @@@@ """
-days = 80
-N_user = 300  # reference for what alpha = 1 refers to
-reference_price = 2.0
-daily_budget = 500
-n_arms = 100
+days = 100
+N_user = 200  # reference for what alpha = 1 refers to
+reference_price = 4.0
+daily_budget = 50 * 5
+n_arms = 15
 environment = Environment()
 
 bool_alpha_noise = True
@@ -22,7 +26,7 @@ printBasicDebug = False
 printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
-# comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
+#comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
 comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
 """ @@@@ ---------------- @@@@ """
 
@@ -50,14 +54,18 @@ def set_budgets_arm_env(s_arm):
     for i, b in enumerate(s_arm):
         environment.set_campaign_budget(i, b)
 
+"""
+We use knapsack aggregated for benchmark since running knapsack disaggregated is too computational demanding"""
 
 rewards_knapsack_agg = []
 
 learner_rewards = []
 # solve comb problem for tomorrow
 super_arm = comb_learner.pull_super_arm()
+img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
+axs = axss.flatten()
 
-for day in range(days):
+for day in progressbar.progressbar(range(days)):
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
@@ -110,9 +118,67 @@ for day in range(days):
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
-    if day % 20 == 0:
+    if printBasicDebug and day % 20 == 0:
         print(f"super arm:  {super_arm}")
         print(f"alloc knap: {alloc[1:]}")
+
+    if day % 10 == 0:
+        axs[5].cla()
+        for i, rw in enumerate(rewards):
+            axs[i].cla()
+        """img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
+        axs = axss.flatten()"""
+    if day % 2 == 0:
+        x = available_budget
+        x2 = comb_learner.arms
+        for i, rw in enumerate(rewards):
+            axs[i].set_xlabel("budget")
+            axs[i].set_ylabel("profit")
+            axs[i].plot(x, rw)
+            # axs[i].plot(x2, comb_learner.last_knapsack_reward[i])
+            mean, std = comb_learner.get_gp_data()
+            # print(std[0])
+            # print(mean[0][0])
+            axs[i].plot(x2, mean[i])
+            axs[i].fill_between(
+                np.array(x2).ravel(),
+                mean[i] - 1.96 * std[i],
+                mean[i] + 1.96 * std[i],
+                alpha=0.5,
+                label=r"95% confidence interval",
+            )
+        d = np.linspace(0, len(rewards_knapsack_agg), len(rewards_knapsack_agg))
+        axs[5].set_xlabel("days")
+        axs[5].set_ylabel("reward")
+        axs[5].plot(d, rewards_knapsack_agg)
+        axs[5].plot(d, learner_rewards)
+        plt.pause(0.1)
+
+# **** print profit functions and learned ones ***********
+img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
+axs = axss.flatten()
+x = available_budget
+x2 = comb_learner.arms
+for i, rw in enumerate(rewards):
+    axs[i].set_xlabel("budget")
+    axs[i].set_ylabel("profit")
+    axs[i].plot(x, rw)
+    #axs[i].plot(x2, comb_learner.last_knapsack_reward[i])
+    mean, std = comb_learner.get_gp_data()
+    #print(std[0])
+    #print(mean[0][0])
+    axs[i].plot(x2, mean[i])
+    axs[i].fill_between(
+        np.array(x2).ravel(),
+        mean[i] - 1.96 * std[i],
+        mean[i] + 1.96 * std[i],
+        alpha=0.5,
+        label=r"95% confidence interval",
+    )
+
+plt.show()
+
+# ********* statistical measures *********************
 print(f"super arm:  {super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
