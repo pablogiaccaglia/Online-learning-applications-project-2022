@@ -19,11 +19,12 @@ class CombWrapper:
     def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget):  # arms are the budgets (e.g 0,10,20...)
         self.learners = []
         self.max_b = max_budget
+        self.last_knapsack_reward = []
         # distribute arms uniformly in range (0, maxbudget)
         self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
         # initialize one learner for each campaign
-        mean = 350
-        var = 90
+        mean = 300
+        var = 100
         for _ in range(n_campaigns):
             self.learners.append(learner_constructor(self.arms, mean, var))
 
@@ -40,7 +41,7 @@ class CombWrapper:
         arg_max = np.argmax(k.get_output()[0][-1])
         alloc = k.get_output()[1][-1][arg_max]
         super_arms = alloc  # todo the get of result can be optimized
-
+        self.last_knapsack_reward = rewards
         # return best allocation possible after combinatorial optimization problem
         return super_arms[1:]
 

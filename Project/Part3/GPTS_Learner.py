@@ -15,14 +15,16 @@ class GPTS_Learner(Learner):
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
-        self.pulled_arms = []  # One arm for campaign
+        self.pulled_arms = []
 
         alpha = 0.5
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
+        # with first term of RBF exploration can be regulated high value more correlation
+        # distance
+        kernel = C(1.0, (1e-3, 1e3)) * RBF(500, (1e-2, 1e2))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
-                                           alpha=alpha ** 2,
-                                           # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
-                                           #                          USING IT RIGHT. NORMALIZE Y MANUALLY
+                                           alpha=alpha**2,
+                                           normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
+                                           #                         USING IT RIGHT. NORMALIZE Y MANUALLY
                                            n_restarts_optimizer=9)
 
     def update_observations(self, pulled_arm, reward):
@@ -37,12 +39,10 @@ class GPTS_Learner(Learner):
         x = np.atleast_2d(self.pulled_arms).T
         y = self.collected_rewards
         warnings.simplefilter(action='ignore', category=ConvergenceWarning)
-        self.gp.fit(x, y)  # TODO: y IS NOT NORMALIZED. DO IT MANUALLY IF NECESSARY
+        self.gp.fit(x, y)
         self.means, self.sigmas = self.gp.predict(
             np.atleast_2d(self.arms).T,
             return_std=True)
-        # force sigma>0. It shouldn't be an issue anyway
-        self.sigmas = np.maximum(self.sigmas, 1e-2)
 
     def update(self, pulled_super_arm, rewards):
         self.t += 1
