@@ -18,7 +18,7 @@ class Environment:
         self.products = [prod1, prod2, prod3, prod4, prod5]
         """ Alpha functions SETUP """
         mv = 1  # don't change it,  max alpha function value
-        act = 20  # activation
+        act = 23  # activation
         alpha_usr1 = [
             util.new_alpha_function(saturation_speed=0.025, max_value=mv, activation=act),
             util.new_alpha_function(saturation_speed=0.06, max_value=mv, activation=act),
@@ -27,7 +27,7 @@ class Environment:
             util.new_alpha_function(saturation_speed=0.04, max_value=mv, activation=act),
             util.new_alpha_function(saturation_speed=0.06, max_value=mv, activation=act)
         ]
-        act = 25  # activation
+        act = 30  # activation
         alpha_usr2 = [
             util.new_alpha_function(saturation_speed=0.18, max_value=mv, activation=act),
             util.new_alpha_function(saturation_speed=0.16, max_value=mv, activation=act),
@@ -104,7 +104,7 @@ class Environment:
                      )
 
         """ Campaigns SETUP """
-        alpha_i_max = [0.5, 0.5, 0.3, 0.4, 0.3]
+        alpha_i_max = [0.4, 0.4, 0.2, 0.3, 0.2]
         self.allocated_budget = [10, 20, 30, 40, 50]  # range 0-100
 
         cmp1 = Campaign(1, self.allocated_budget[0], alpha_i_max=alpha_i_max[0])
