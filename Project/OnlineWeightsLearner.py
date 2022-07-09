@@ -132,7 +132,7 @@ class OnlineWeightsLearner:
         return [best_node]
 
     @staticmethod
-    def estimate_weights(true_graph: Graph, simulations, monte_carlo_repetitions):
+    def estimate_weights(true_graph: Graph, simulations, monte_carlo_repetitions, silent=True):
         # Copy the original graph and convert to a learnable one -> all weights are initially set to 0.5
         graph = LearnableGraph(g = true_graph)
 
@@ -166,22 +166,22 @@ class OnlineWeightsLearner:
             print("", end = "\r")
 
         print("", end = "")
+        if not silent:
+            plt.plot(x_list, y_list, label = 'Bandit Approximation', color = 'tab:blue', linestyle = '-')
+            plt.plot(x_list, y2_list, label = 'Ideal 0 Value', color = 'tab:orange', linestyle = '--')
+            plt.title("Unknown Activation Probabilities - Approximation Error")
+            plt.ylabel("Approximation Error")
+            plt.xlabel("Time")
+            plt.yticks(np.arange(0, max(y_list), 0.1))
+            plt.legend()
+            plt.show()
+            plt.close()
 
-        plt.plot(x_list, y_list, label = 'Bandit Approximation', color = 'tab:blue', linestyle = '-')
-        plt.plot(x_list, y2_list, label = 'Ideal 0 Value', color = 'tab:orange', linestyle = '--')
-        plt.title("Unknown Activation Probabilities - Approximation Error")
-        plt.ylabel("Approximation Error")
-        plt.xlabel("Time")
-        plt.yticks(np.arange(0, max(y_list), 0.1))
-        plt.legend()
-        plt.show()
-        plt.close()
-
-        plt.plot(x_list, regret_list, label = 'Cumulative Regret', color = 'tab:blue', linestyle = '-')
-        plt.title("Unknown Activation Probabilities - Cumulative Regret")
-        plt.ylabel("Cumulative Regret")
-        plt.xlabel("Time")
-        plt.legend()
-        plt.show()
+            plt.plot(x_list, regret_list, label = 'Cumulative Regret', color = 'tab:blue', linestyle = '-')
+            plt.title("Unknown Activation Probabilities - Cumulative Regret")
+            plt.ylabel("Cumulative Regret")
+            plt.xlabel("Time")
+            plt.legend()
+            plt.show()
 
         return graph
