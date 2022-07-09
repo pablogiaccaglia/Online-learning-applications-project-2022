@@ -50,9 +50,18 @@ class CombWrapper:
         print(index_arm)
         print(env_rewards)"""
         for i, learner in enumerate(self.learners):
-            # for each learner update the net reward of the selected arm
-            net_reward = env_rewards[i] - super_arm[i]
-            learner.update(index_arm[i], net_reward)
+            # update arm of learner if extracted
+            if super_arm[i] != 0:
+                net_reward = env_rewards[i] - super_arm[i]
+                learner.update(index_arm[i], net_reward)
+
+    def get_gp_data(self):
+        sigmas = []
+        means = []
+        for lrn in self.learners:
+            sigmas.append(lrn.sigmas)
+            means.append(lrn.means)
+        return means, sigmas
 
     def __indexes_super_arm(self, super_arm):
         """Given a super arm return the corresponding index for every learner
