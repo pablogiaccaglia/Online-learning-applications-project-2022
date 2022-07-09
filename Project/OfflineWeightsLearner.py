@@ -6,9 +6,9 @@ class OfflineWeightsLearner:
     # the estimation of the probability can be computed node by node independently , so we need just the targetNodes
 
     @staticmethod
-    def __generateEpisodesDataset(numOfEpisodes: int, probabilitiesMatrix) -> list[list[np.ndarray]]:
+    def __generateEpisodesDataset(numOfEpisodes: int, probabilitiesMatrix):# -> list[list[np.ndarray]]:
 
-        def simulateEpisode(initialProbabilitiesMatrix: np.ndarray, numOfMaxSteps) -> list[np.ndarray]:
+        def simulateEpisode(initialProbabilitiesMatrix: np.ndarray, numOfMaxSteps):# -> list[np.ndarray]:
             probabilitiesMatrix = initialProbabilitiesMatrix.copy()
             numOfNodes = probabilitiesMatrix.shape[0]  # square matrix
 

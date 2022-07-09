@@ -63,7 +63,8 @@ def get_ecommerce_graph(products = [], padding = 0.1):
 
 
 def __get_graph_specify_neighbours(products: list,
-                                   num_of_neighbours: Union[list[int], int], padding: Union[float, list[float]] = None,
+                                   num_of_neighbours,
+                                   padding = None,
                                    weighted = True, known = True):
     graph = Graph() if known else LearnableGraph()
 
@@ -121,7 +122,7 @@ def no_noise_matrix(n_user=3, n_product=5):
     return [[1 for c in range(n_product)] for r in range(n_user)]
 
 
-def get_prettyprint_array(arr: Union[np.ndarray, list], row_labels: list[str] = None, col_labels: list[str] = None):
+def get_prettyprint_array(arr, row_labels = None, col_labels = None):
     return pd.DataFrame(arr, columns = col_labels, index = row_labels)
 
 
