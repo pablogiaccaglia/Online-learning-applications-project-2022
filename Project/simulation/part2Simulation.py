@@ -3,9 +3,12 @@ import pandas as pd
 from Knapsack import Knapsack
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
+import time
+import progressbar
+
 
 """ @@@@ simulation SETUP @@@@ """
-days = 5
+days = 3
 N_user = 1000  # reference for what alpha = 1 refers to
 reference_price = 3.5
 daily_budget = 1500
@@ -38,12 +41,13 @@ def set_budgets_env(knapsack_alloc):
 
 
 rewards_aggregated = []
-
-for day in range(days):
+rewards_disaggregated = []
+for day in progressbar.progressbar(range(days)):
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,bool_alpha_noise, bool_n_noise)  # object with all the day info
+    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, bool_alpha_noise,
+                                       bool_n_noise)  # object with all the day info
     profit1, profit2, profit3, daily_profit = sim_obj["profit"]
     p_cmp_1, p_cmp_2, p_cmp_3, p_cmp_4, p_cmp_5, tot_camp = sim_obj["profit_campaign"]
     noise_alpha = sim_obj["noise"]
@@ -82,12 +86,16 @@ for day in range(days):
     # -----------------------------------------------------------------
 
     # disaggregated knapsack   --------------------------------------------
-    if not runAggregated:
+    if runAggregated:
         rewards, available_budget = sim_obj["reward_k"]
         row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), len(users), available_budget)
         K = Knapsack(rewards=rewards, budgets=np.array(available_budget))
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
         K.solve()
+
+        alloc = K.get_output()[1][-1][-1]
+        reward = K.get_output()[0][-1][-1]
+        rewards_disaggregated.append(reward)
 
         if printBasicDebug:
             alloc = K.get_output()[1][-1][-1]
@@ -104,11 +112,14 @@ for day in range(days):
             K.pretty_print_output(
                 print_last_row_only=False)  # prints information about last row of the table, including allocations
     # -----------------------------------------------------------------
-
 print(f"\n***** FINAL RESULT *****")
-print(f"total profit:\t {sum(rewards_aggregated):.4f}€")
-print(f"average profit:\t {np.mean(rewards_aggregated):.4f}€")
-print(f"standard deviation:\t {np.std(rewards_aggregated):.4f}€")
+print(f"aggregated profit:\t {sum(rewards_aggregated):.4f}€")
+print(f"\taverage:\t {np.mean(rewards_aggregated):.4f}€")
+print(f"\tstandard:\t {np.std(rewards_aggregated):.4f}€")
+print("---------------------------")
+print(f"disaggregated profit:\t {sum(rewards_disaggregated):.4f}€")
+print(f"\taverage:\t {np.mean(rewards_disaggregated):.4f}€")
+print(f"\tstandard:\t {np.std(rewards_disaggregated):.4f}€")
 plt.close()
 days = np.linspace(0, len(rewards_aggregated), len(rewards_aggregated))
 
@@ -117,9 +128,13 @@ axs = axss.flatten()
 
 axs[0].set_xlabel("days")
 axs[0].set_ylabel("reward")
-axs[0].plot(days, rewards_aggregated)
+axs[0].plot(days, rewards_aggregated, label='aggregated')
+axs[0].plot(days, rewards_disaggregated, label='disaggregated')
+axs[0].legend()
 
 axs[1].set_xlabel("days")
 axs[1].set_ylabel("cumulative reward")
-axs[1].plot(days, np.cumsum(rewards_aggregated))
+axs[1].plot(days, np.cumsum(rewards_aggregated), label='aggregated')
+axs[1].plot(days, np.cumsum(rewards_disaggregated), label='disaggregated')
+axs[1].legend()
 plt.show()
