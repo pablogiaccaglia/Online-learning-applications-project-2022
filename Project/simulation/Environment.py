@@ -48,17 +48,16 @@ class Environment:
 
         # plot alpha functions
         do_plot = False
-        test_alpha = alpha_usr3
-        img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
-        axs = axss.flatten()
-        for i in range(6):
-            x = np.linspace(0, 100, 100)
-            y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
-            axs[i].set_xlabel("budget")
-            axs[i].set_ylabel(f"alpha{i}_val")
-            axs[i].plot(x, y)
-
         if do_plot:  # show or not alpha plot
+            test_alpha = alpha_usr3
+            img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
+            axs = axss.flatten()
+            for i in range(6):
+                x = np.linspace(0, 100, 100)
+                y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
+                axs[i].set_xlabel("budget")
+                axs[i].set_ylabel(f"alpha{i}_val")
+                axs[i].plot(x, y)
             plt.show()
 
         """ Users SETUP """
@@ -180,6 +179,23 @@ class Environment:
             "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
         }
 
+    def contextualized_day(self, users_context, context_size, n_users, reference_price, alpha_noise=False, n_noise=False):
+        n_context = float(n_users / context_size)
+
+        if alpha_noise:
+            noise_alpha = self.noise_alpha
+        else:
+            noise_alpha = util.no_noise_matrix()
+        if n_noise:
+            exp_number_noise = self.exp_number_noise
+        else:
+            exp_number_noise = util.no_noise_matrix()
+
+        return {
+            "noise": (noise_alpha, exp_number_noise),
+            "profit_campaign": self.__contextualized_profit_per_campaign(n_context, reference_price, users_context),
+        }
+
     def get_core_entities(self):
         return self.users, self.products, self.campaigns, self.allocated_budget, self.prob_users
 
@@ -269,7 +285,7 @@ class Environment:
         profit_u3_euro = profit_u3 * n_users * reference_price
         daily_profit_euro = profit_u1_euro + profit_u2_euro + profit_u3_euro
 
-        return profit_u1_euro, profit_u1_euro, profit_u1_euro, daily_profit_euro
+        return profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro
 
     def __profit_per_campaign(self, n_users, reference_price):
         noise_alpha = self.noise_alpha
@@ -292,6 +308,33 @@ class Environment:
                         u3.expected_profit(exp_number_noise[0])[i]
 
             campaign_profits.append(profit_u1 + profit_u2 + profit_u3)
+
+        # convert the pure number in euro
+        for i, cmp_profit in enumerate(campaign_profits):
+            euro_val = cmp_profit * n_users * reference_price
+            campaign_profits[i] = euro_val
+
+        campaign_profits.append(np.sum(campaign_profits))
+
+        return tuple(campaign_profits)
+
+    def __contextualized_profit_per_campaign(self, n_users, reference_price, users_context):
+        noise_alpha = self.noise_alpha
+        exp_number_noise = self.exp_number_noise
+        idx_users_context = []
+        campaign_profits = []
+        for usr in users_context:
+            idx_users_context.append(self.users.index(usr))
+
+        for i, cmp in enumerate(self.campaigns):
+            profit_u = 0
+            for idx_usr in idx_users_context:
+                u = self.users[idx_usr]
+                p = self.prob_users[idx_usr]
+                profit_u += p * noise_alpha[idx_usr][i] * cmp.get_alpha_i(u.alpha_functions[i]) * \
+                            u.expected_profit(exp_number_noise[idx_usr])[i]
+
+            campaign_profits.append(profit_u)
 
         # convert the pure number in euro
         for i, cmp_profit in enumerate(campaign_profits):
