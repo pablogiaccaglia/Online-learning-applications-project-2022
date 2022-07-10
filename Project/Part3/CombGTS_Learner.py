@@ -37,7 +37,7 @@ class CombGTS_Learner:
 
     def update_observations(self, super_arm, env_rewards):
         index_arm = self.__indexes_super_arm(super_arm)
-        """print(super_arm)
+        """print(gpucb1_super_arm)
         print(index_arm)
         print(env_rewards)"""
         for i, learner in enumerate(self.gts_learners):

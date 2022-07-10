@@ -1,5 +1,3 @@
-from Part3.GTS_Learner import GTS_Learner
-from Part3.Learner import Learner
 import numpy as np
 from Knapsack import Knapsack
 
@@ -16,17 +14,21 @@ class CombWrapper:
 
     (as GTS_Learner class)
     """
+    def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget, is_ucb = False, kwargs = None):  # arms are the budgets (e.g 0,10,20...)
 
-    def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget):  # arms are the budgets (e.g 0,10,20...)
         self.learners = []
         self.max_b = max_budget
+        self.is_ucb = is_ucb
         # distribute arms uniformly in range (0, maxbudget)
         self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
         # initialize one learner for each campaign
         mean = 350
         var = 90
         for _ in range(n_campaigns):
-            self.learners.append(learner_constructor(self.arms, mean, var))
+            if kwargs is None:
+                self.learners.append(learner_constructor(self.arms, mean, var))
+            else:
+                self.learners.append(learner_constructor(self.arms, mean, var, **kwargs))
 
     def pull_super_arm(self) -> np.array:
         """ Return an array budget with the suggested allocation of budgets """
@@ -38,7 +40,29 @@ class CombWrapper:
         budgets = np.array(self.arms)
         k = Knapsack(rewards = np.array(rewards), budgets = budgets)
         k.solve()
-        arg_max = np.argmax(k.get_output()[0][-1])
+
+        if self.is_ucb:
+            # update all the upper confidence bounds
+            #for learner in self.learners:
+            #    learner.update_ucbs()
+
+            # last row allocs
+            allocs = k.get_output()[1][-1]
+
+            # compute cumulative ucb for each super arm
+            cumulative_ucbs = np.zeros(len(self.arms))
+
+            for idxAlloc, alloc in enumerate(allocs):
+
+                indexes = self.__indexes_super_arm(super_arm = alloc) # [0, 3, 5 , 10]
+                for learner, indexArm in zip(self.learners, indexes):
+                    learner.update_ucbs()
+                    cumulative_ucbs[idxAlloc] += learner.ucbs[indexArm]
+
+            arg_max = np.argmax(cumulative_ucbs)
+        else:
+            arg_max = np.argmax(k.get_output()[0][-1])
+
         alloc = k.get_output()[1][-1][arg_max]
         super_arms = alloc  # todo the get of result can be optimized
 
@@ -47,7 +71,7 @@ class CombWrapper:
 
     def update_observations(self, super_arm, env_rewards):
         index_arm = self.__indexes_super_arm(super_arm)
-        """print(super_arm)
+        """print(gpucb1_super_arm)
         print(index_arm)
         print(env_rewards)"""
         for i, learner in enumerate(self.learners):

@@ -1,29 +1,33 @@
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
-from Part3.Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Knapsack import Knapsack
 from Part3.Learner import Learner
 
 
-class GPTS_Learner(Learner):
-    def __init__(self, arms, prior_mean, prior_sigma=1):  # arms are the budgets (e.g 0,10,20...)
+class GPUCB1_Learner(Learner):
+    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 100.):  # arms are the budgets (e.g 0,10,20...)
         super().__init__(len(arms))
         self.n_arms = len(arms)
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
         self.pulled_arms = []  # One arm for campaign
+        self.ucbs = np.ones(self.n_arms) * np.inf
+
+        """beta (optional): Hyper-parameter to tune the exploration-exploitation
+            balance. If beta is large, it emphasizes the variance of the unexplored
+            solution solution (i.e. larger curiosity)"""
+        self.beta = beta
 
         alpha = 0.5
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
-        self.gp = GaussianProcessRegressor(kernel=kernel,
-                                           alpha=alpha ** 2,
+        self.gp = GaussianProcessRegressor(kernel = kernel,
+                                           alpha = alpha ** 2,
                                            # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
                                            #                          USING IT RIGHT. NORMALIZE Y MANUALLY
-                                           n_restarts_optimizer=9)
+                                           n_restarts_optimizer = 9)
 
     def update_observations(self, pulled_arm, reward):
         super().update_observations(pulled_arm, reward)
@@ -33,14 +37,21 @@ class GPTS_Learner(Learner):
         else:
             self.pulled_arms = np.append(np.atleast_2d(self.pulled_arms), np.atleast_2d(gpucb1_super_arm), axis=0)"""
 
+    def update_ucbs(self):
+        for armIdx in range(self.n_arms):
+            self.ucbs[armIdx] = self.compute_UCB(armIdx)
+
+    def compute_UCB(self, idx):
+        return self.means[idx] + self.sigmas[idx] * np.sqrt(self.beta)
+
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T
         y = self.collected_rewards
-        warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+        warnings.simplefilter(action = 'ignore', category = ConvergenceWarning)
         self.gp.fit(x, y)  # TODO: y IS NOT NORMALIZED. DO IT MANUALLY IF NECESSARY
         self.means, self.sigmas = self.gp.predict(
-            np.atleast_2d(self.arms).T,
-            return_std=True)
+                np.atleast_2d(self.arms).T,
+                return_std = True)
         # force sigma>0. It shouldn't be an issue anyway
         self.sigmas = np.maximum(self.sigmas, 1e-2)
 

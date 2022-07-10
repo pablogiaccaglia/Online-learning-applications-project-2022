@@ -57,8 +57,11 @@ def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, 
     """ return a 2D list: one row for user and column for products
         it returns the multiplier for a stochastic reduction on alpha function """
     global_influence = uniform(0.0, max_global_influence)  # set day trend
-    return [[1 - uniform(0, max_reduction) - global_influence for c in range(n_product)] for r in range(n_user)]
-
+    # generate a random contraction and add a random addition
+    return [
+        [1 - uniform(0, max_reduction) - global_influence + uniform(-0.25, 0.25)
+         for c in range(n_product)] for r in range(n_user)
+    ]
 
 def no_noise_matrix(n_user=3, n_product=5):
     return [[1 for c in range(n_product)] for r in range(n_user)]

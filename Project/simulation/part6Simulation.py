@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
 from Knapsack import Knapsack
-from Part3.GTS_Learner import GTS_Learner
-from Part3.GPTS_Learner import GPTS_Learner
 from Part3.CombWrapper import CombWrapper
-from Part3.GPTS_Learner import GPTS_Learner
-from Part6.UCB1Learner import UCB1Learner
+from Part3.GPUCB1_Learner import GPUCB1_Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
@@ -18,15 +15,15 @@ n_arms = 100
 environment = Environment()
 
 bool_alpha_noise = True
-bool_n_noise = True
+bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
-# comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
-comb_learner = CombWrapper(UCB1Learner, 5, n_arms, daily_budget)
-""" @@@@ ---------------- @@@@ """
+# gpucb1_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
+comb_learner = CombWrapper(GPUCB1_Learner, 5, n_arms, daily_budget, is_ucb = True)
 
+""" @@@@ ---------------- @@@@ """
 
 def table_metadata(n_prod, n_users, avail_budget):
     _col_labels = [str(budget) for budget in avail_budget]
@@ -54,11 +51,18 @@ def set_budgets_arm_env(s_arm):
 
 rewards_knapsack_agg = []
 
-ucb1_rewards = []
+learner_rewards = []
 # solve comb problem for tomorrow
 super_arm = comb_learner.pull_super_arm()
 
 for day in range(days):
+
+    if day > 30:
+        N_user = 800
+
+    if day > 60:
+        N_user = 200
+
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
@@ -107,7 +111,7 @@ for day in range(days):
                                                bool_n_noise)
 
     comb_learner.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
-    ucb1_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
+    learner_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
@@ -118,11 +122,18 @@ print(f"super arm:  {super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
 print(f"\n***** FINAL RESULT *****")
+print(f"days simulated: {days}")
 print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
-print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
 print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"Learner profit:\t {sum(learner_rewards):.4f}€")
+print("----------------------------")
+print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
+print(f"\tstd:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"average reward:\t {np.mean(learner_rewards):.4f}€")
+print(f"\tstd:\t {np.std(learner_rewards):.4f}€")
+print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(learner_rewards)):.4f}€")
+print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(learner_rewards)):.4f}€")
 
-print(f"GTS profit:\t {sum(ucb1_rewards):.4f}€")
 plt.close()
 d = np.linspace(0, len(rewards_knapsack_agg), len(rewards_knapsack_agg))
 
@@ -132,18 +143,23 @@ axs = axss.flatten()
 axs[0].set_xlabel("days")
 axs[0].set_ylabel("reward")
 axs[0].plot(d, rewards_knapsack_agg)
-axs[0].plot(d, ucb1_rewards)
+axs[0].plot(d, learner_rewards)
 
 axs[1].set_xlabel("days")
 axs[1].set_ylabel("cumulative reward")
 axs[1].plot(d, np.cumsum(rewards_knapsack_agg))
-axs[1].plot(d, np.cumsum(ucb1_rewards))
+axs[1].plot(d, np.cumsum(learner_rewards))
 
 axs[2].set_xlabel("days")
-axs[2].set_ylabel("CUCB1 cumulative regret")
-axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(ucb1_rewards)))
+axs[2].set_ylabel("cumulative regret")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(learner_rewards)))
 
 axs[3].set_xlabel("days")
-axs[3].set_ylabel("CUCB1 regret")
-axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(ucb1_rewards))
+axs[3].set_ylabel("regret")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(learner_rewards))
 plt.show()
+
+# TODO
+#  1) graphs to show learned curve of profits
+#  2) same simulation but comparing 2 algorithms
+#  3) theoretical upper bound regret

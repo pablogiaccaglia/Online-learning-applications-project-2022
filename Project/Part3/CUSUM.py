@@ -1,5 +1,4 @@
 import numpy as np
-
 class CUSUM:
 
     def __init__(self, samplesForRefPoint, epsilon, detectionThreshold):

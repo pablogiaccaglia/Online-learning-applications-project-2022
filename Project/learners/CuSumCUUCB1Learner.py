@@ -1,6 +1,5 @@
 from learners.CUCB1Learner import CUCB1Learner
-import numpy as np
-from learners.CUSUM import CUSUM
+from CUSUM import CUSUM
 
 
 class CuSumCUB1Learner(CUCB1Learner):

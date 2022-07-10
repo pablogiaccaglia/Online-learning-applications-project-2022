@@ -22,10 +22,11 @@ printBasicDebug = False
 printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
-# comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
-comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
+# gpucb1_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
+mean = 350
+var = 90
+comb_learner = CombWrapper(GPTS_Learner, 5, n_arms)
 """ @@@@ ---------------- @@@@ """
-
 
 def table_metadata(n_prod, n_users, avail_budget):
     _col_labels = [str(budget) for budget in avail_budget]
@@ -54,10 +55,18 @@ def set_budgets_arm_env(s_arm):
 rewards_knapsack_agg = []
 
 learner_rewards = []
+learner2_rewards = []
 # solve comb problem for tomorrow
 super_arm = comb_learner.pull_super_arm()
 
 for day in range(days):
+
+    if day > 30:
+        N_user = 800
+
+    if day > 60:
+        N_user = 200
+
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()

@@ -1,5 +1,5 @@
 import numpy as np
-
+from CUSUM import CUSUM
 """class Learner:
 
     def __init__(self, n_arms, n_campaigns):
@@ -20,11 +20,16 @@ import numpy as np
 
 
 class Learner:
-    def __init__(self, n_arms, change_detection = False):
+    def __init__(self, n_arms, enable_cd = False, kwargs = None):
         self.n_arms = n_arms
         self.t = 0  # current round variable
-        self.rewards_per_arm = x = [[] for _ in range(n_arms)]
+        self.rewards_per_arm = [[] for _ in range(n_arms)]
         self.collected_rewards = np.array([])
+        self.change_detection = []
+        if enable_cd:
+            self.change_detection = [CUSUM(**kwargs) for _ in range(n_arms)]
+
+
 
     def update_observations(self, pulled_arm, reward):
         self.rewards_per_arm[pulled_arm].append(reward)
