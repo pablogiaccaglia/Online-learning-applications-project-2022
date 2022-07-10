@@ -14,7 +14,14 @@ class CombWrapper:
 
     (as GTS_Learner class)
     """
-    def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget, is_ucb = False, kwargs = None):  # arms are the budgets (e.g 0,10,20...)
+    def __init__(self,
+                 learner_constructor,
+                 n_campaigns,
+                 n_arms,
+                 max_budget,
+                 is_ucb = False,
+                 is_gaussian = False,
+                 kwargs = None):  # arms are the budgets (e.g 0,10,20...)
 
         self.learners = []
         self.max_b = max_budget
@@ -25,10 +32,18 @@ class CombWrapper:
         mean = 350
         var = 90
         for _ in range(n_campaigns):
-            if kwargs is None:
-                self.learners.append(learner_constructor(self.arms, mean, var))
+
+            if is_gaussian:
+                if kwargs is None:
+                    self.learners.append(learner_constructor(self.arms, mean, var))
+                else:
+                    self.learners.append(learner_constructor(self.arms, mean, var, **kwargs))
+
             else:
-                self.learners.append(learner_constructor(self.arms, mean, var, **kwargs))
+                if kwargs is None:
+                    self.learners.append(learner_constructor(self.arms))
+                else:
+                    self.learners.append(learner_constructor(self.arms, **kwargs))
 
     def pull_super_arm(self) -> np.array:
         """ Return an array budget with the suggested allocation of budgets """

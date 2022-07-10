@@ -25,7 +25,7 @@ runAggregated = False  # mutual exclusive with run disaggregated
 # gpucb1_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
 mean = 350
 var = 90
-comb_learner = CombWrapper(GPTS_Learner, 5, n_arms)
+comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, is_gaussian = True, max_budget = daily_budget)
 """ @@@@ ---------------- @@@@ """
 
 def table_metadata(n_prod, n_users, avail_budget):
