@@ -1,5 +1,6 @@
 import numpy as np
 from CUSUM import CUSUM
+
 """class Learner:
 
     def __init__(self, n_arms, n_campaigns):
@@ -20,17 +21,35 @@ from CUSUM import CUSUM
 
 
 class Learner:
-    def __init__(self, n_arms, enable_cd = False, kwargs = None):
+    def __init__(self, n_arms, cusum_args = None):
         self.n_arms = n_arms
         self.t = 0  # current round variable
         self.rewards_per_arm = [[] for _ in range(n_arms)]
         self.collected_rewards = np.array([])
-        self.change_detection = []
-        if enable_cd:
-            self.change_detection = [CUSUM(**kwargs) for _ in range(n_arms)]
+        self.cd_enabled = False
+        self.pulled_arms = []  # One arm for campaign
 
+        if cusum_args:
+            self.cd_enabled = True
+            self.explorationAlpha = cusum_args['explorationAlpha']
+            self.valid_collected_rewards = np.array([])
+            self.detections = [[] for _ in range(n_arms)]
 
+            cusum_args = dict(cusum_args)  # avoiding modifying original dict
+            del cusum_args['explorationAlpha']
+            self.change_detection = [CUSUM(**cusum_args) for _ in range(n_arms)]
 
     def update_observations(self, pulled_arm, reward):
+
+        if self.cd_enabled:
+            if self.change_detection[pulled_arm].update(reward):
+                self.detections[pulled_arm].append(self.t)
+                self.valid_collected_rewards = []
+                self.pulled_arms = []
+                self.change_detection[pulled_arm].reset()
+
         self.rewards_per_arm[pulled_arm].append(reward)
         self.collected_rewards = np.append(self.collected_rewards, reward)  # optimizable
+
+        if self.cd_enabled:
+            self.valid_collected_rewards = np.append(self.valid_collected_rewards, reward)  # optimizable

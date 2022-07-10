@@ -7,13 +7,12 @@ from Part3.Learner import Learner
 
 
 class GPUCB1_Learner(Learner):
-    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 100.):  # arms are the budgets (e.g 0,10,20...)
-        super().__init__(len(arms))
+    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 100., cusum_args = None):  # arms are the budgets (e.g 0,10,20...)
+        super().__init__(len(arms), cusum_args)
         self.n_arms = len(arms)
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
-        self.pulled_arms = []  # One arm for campaign
         self.ucbs = np.ones(self.n_arms) * np.inf
 
         """beta (optional): Hyper-parameter to tune the exploration-exploitation
@@ -55,9 +54,9 @@ class GPUCB1_Learner(Learner):
         # force sigma>0. It shouldn't be an issue anyway
         self.sigmas = np.maximum(self.sigmas, 1e-2)
 
-    def update(self, pulled_super_arm, rewards):
+    def update(self, pulled_arm, rewards):
         self.t += 1
-        self.update_observations(pulled_super_arm, rewards)
+        self.update_observations(pulled_arm, rewards)
         self.update_model()
 
     # Same as gts_learner

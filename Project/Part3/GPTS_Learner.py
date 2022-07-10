@@ -1,10 +1,8 @@
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
-from Part3.Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Knapsack import Knapsack
 from Part3.Learner import Learner
 
 
@@ -15,7 +13,6 @@ class GPTS_Learner(Learner):
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
-        self.pulled_arms = []  # One arm for campaign
 
         alpha = 0.5
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
@@ -44,9 +41,9 @@ class GPTS_Learner(Learner):
         # force sigma>0. It shouldn't be an issue anyway
         self.sigmas = np.maximum(self.sigmas, 1e-2)
 
-    def update(self, pulled_super_arm, rewards):
+    def update(self, pulled_arm, rewards):
         self.t += 1
-        self.update_observations(pulled_super_arm, rewards)
+        self.update_observations(pulled_arm, rewards)
         self.update_model()
 
     # Same as gts_learner
