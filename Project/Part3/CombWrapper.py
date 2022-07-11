@@ -68,7 +68,6 @@ class CombWrapper:
             cumulative_ucbs = np.zeros(len(self.arms))
 
             for idxAlloc, alloc in enumerate(allocs):
-
                 indexes = self.__indexes_super_arm(super_arm = alloc) # [0, 3, 5 , 10]
                 for learner, indexArm in zip(self.learners, indexes):
                     learner.update_ucbs()

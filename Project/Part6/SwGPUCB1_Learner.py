@@ -76,7 +76,7 @@ class SwGPUCB1_Learner(Learner):
 
         if self.t % self.window_size == 0:
             """
-            If a new sliding window starts, empirical means and number of collected samples have to be re-initialized.
+            If a new sliding window starts, collected rewards and pulled arms bandit info have to be re initialized.
             """
             self.reset_window()
 

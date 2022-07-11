@@ -6,11 +6,13 @@ from Part3.GPUCB1_Learner import GPUCB1_Learner
 from Part6.SwGPUCB1_Learner import SwGPUCB1_Learner
 from Part6.CUSUM_GPUCB1_Learner import CusumGPUCB1Learner
 from Part6.SwGTSLearner import SwGTSLearner
+from Part6.CusumGTSLearner import CusumGTSLearner
+from Part3.GTS_Learner import GTS_Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
 """ @@@@ simulation SETUP @@@@ """
-days = 200
+days = 1000
 N_user = 200  # reference for what alpha = 1 refers to
 reference_price = 4.0
 daily_budget = 50 * 5
@@ -24,21 +26,27 @@ printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
 # gpucb1_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
-kwargs_cusum = {"samplesForRefPoint": 10,
+
+
+""" These parameters change a lot the performance of the CUSUM based bandits !! """
+kwargs_cusum = {"samplesForRefPoint": 20,
                 "epsilon":            0.05,
-                "detectionThreshold": 10,
+                "detectionThreshold": 100,  # np.log(days)*2 + 0.2*days
                 "explorationAlpha":   0.01}
+
+""" This parameter changes a lot the performance of the SW based bandits !! """
 window_size = int(np.sqrt(days) + 0.1 * days)
+
 kwargs_sw = {'window_size': window_size}
 
 gpucb1_learner = CombWrapper(GPUCB1_Learner, 5, n_arms, daily_budget, is_ucb = True, is_gaussian = True)
 sw_gpucb1_learner = CombWrapper(SwGPUCB1_Learner, 5, n_arms, daily_budget, is_ucb = True, kwargs = kwargs_sw, is_gaussian = True)
 cusum_gpucb1_learner = CombWrapper(CusumGPUCB1Learner, 5, n_arms, daily_budget, is_ucb = True, kwargs = kwargs_cusum, is_gaussian = True)
-sw_ts_learner = CombWrapper(SwGTSLearner, 5, n_arms, daily_budget, is_ucb = False, kwargs = kwargs_sw, is_gaussian = True)
-
+sw_gts_learner = CombWrapper(SwGTSLearner, 5, n_arms, daily_budget, is_ucb = False, kwargs = kwargs_sw, is_gaussian = True)
+cusum_gts_learner = CombWrapper(CusumGTSLearner, 5, n_arms, daily_budget, is_ucb = False, kwargs = kwargs_cusum, is_gaussian = True)
+gts_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget, is_ucb = False, is_gaussian = True)
 
 """ @@@@ ---------------- @@@@ """
-
 
 def table_metadata(n_prod, n_users, avail_budget):
     _col_labels = [str(budget) for budget in avail_budget]
@@ -69,25 +77,47 @@ rewards_knapsack_agg = []
 gpucb1_rewards = []
 sw_gpucb1_rewards = []
 cusum_gpucb1_rewards = []
-sw_ts_rewards = []
+sw_gts_rewards = []
+cusum_gts_rewards = []
+gts_rewards = []
 
 # solve comb problem for tomorrow
 gpucb1_super_arm = gpucb1_learner.pull_super_arm()
 sw_gpucb1_super_arm = sw_gpucb1_learner.pull_super_arm()
 cusum_gpucb1_super_arm = cusum_gpucb1_learner.pull_super_arm()
-sw_ts_super_arm = sw_ts_learner.pull_super_arm()
+sw_gts_super_arm = sw_gts_learner.pull_super_arm()
+cusum_gts_super_arm = cusum_gts_learner.pull_super_arm()
+gts_super_arm = gts_learner.pull_super_arm()
 
-N_user_phases = [N_user, int(N_user - 0.5 * N_user), int(N_user + N_user), int(N_user - 0.6 * N_user), N_user]
+N_user_phases = [N_user, int(N_user*0.5), int(N_user + 0.5*N_user), 2*N_user]
 
 n_phases = len(N_user_phases)
 
 phase_size = days / n_phases
+
+
+""" Probability of users per phase """
+
+prob_user1 = 0.25
+prob_user2 = 0.45
+prob_user3 = 0.30
+
+prob_users_phases = [[] for _ in range(n_phases)]
+
+for phase in range(n_phases):
+
+    probs = abs(np.random.normal(size = 3))
+    probs /= probs.sum()
+
+    prob_users_phases[phase] = list(probs)
 
 for day in range(days):
 
     current_phase = int(day / phase_size)
 
     N_user = N_user_phases[current_phase]
+
+    environment.prob_users = prob_users_phases[current_phase].copy()
 
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
@@ -163,13 +193,34 @@ for day in range(days):
 
     # LEARNER 4
 
-    set_budgets_arm_env(sw_ts_super_arm)
+    set_budgets_arm_env(sw_gts_super_arm)
     # test result on env
     sim_obj_5 = environment.replicate_last_day(N_user, reference_price, bool_n_noise, bool_n_noise)
-    sw_ts_learner.update_observations(sw_ts_super_arm, sim_obj_4["profit_campaign"][:-1])
-    sw_ts_rewards.append(sim_obj_5["profit_campaign"][-1] - np.sum(sw_ts_super_arm))
+    sw_gts_learner.update_observations(sw_gts_super_arm, sim_obj_5["profit_campaign"][:-1])
+    sw_gts_rewards.append(sim_obj_5["profit_campaign"][-1] - np.sum(sw_gts_super_arm))
     # solve comb problem for tomorrow
-    sw_ts_super_arm = cusum_gpucb1_learner.pull_super_arm()
+    sw_gts_super_arm = sw_gts_learner.pull_super_arm()
+
+
+    # LEARNER 5
+
+    set_budgets_arm_env(cusum_gts_super_arm)
+    # test result on env
+    sim_obj_6 = environment.replicate_last_day(N_user, reference_price, bool_n_noise, bool_n_noise)
+    cusum_gts_learner.update_observations(cusum_gts_super_arm, sim_obj_6["profit_campaign"][:-1])
+    cusum_gts_rewards.append(sim_obj_6["profit_campaign"][-1] - np.sum(cusum_gts_super_arm))
+    # solve comb problem for tomorrow
+    cusum_gts_super_arm = cusum_gts_learner.pull_super_arm()
+
+    # LEARNER 6
+
+    set_budgets_arm_env(gts_super_arm)
+    # test result on env
+    sim_obj_7 = environment.replicate_last_day(N_user, reference_price, bool_n_noise, bool_n_noise)
+    gts_learner.update_observations(gts_super_arm, sim_obj_7["profit_campaign"][:-1])
+    gts_rewards.append(sim_obj_7["profit_campaign"][-1] - np.sum(gts_super_arm))
+    # solve comb problem for tomorrow
+    gts_super_arm = gts_learner.pull_super_arm()
 
     # -----------------------------------------------------------------
     if day % 20 == 0:
@@ -182,7 +233,13 @@ for day in range(days):
         print(f"super arm 3:  {cusum_gpucb1_super_arm}")
         print(f"alloc knap: {alloc[1:]}")
 
-        print(f"super arm 4:  {sw_ts_super_arm}")
+        print(f"super arm 4:  {sw_gts_super_arm}")
+        print(f"alloc knap: {alloc[1:]}")
+
+        print(f"super arm 5:  {cusum_gts_super_arm}")
+        print(f"alloc knap: {alloc[1:]}")
+
+        print(f"super arm 5:  {gts_super_arm}")
         print(f"alloc knap: {alloc[1:]}")
 
 print(f"super arm:  {gpucb1_super_arm}")
@@ -194,7 +251,13 @@ print(f"alloc knap: {alloc[1:]}")
 print(f"super arm3:  {cusum_gpucb1_super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
-print(f"super arm4:  {sw_ts_super_arm}")
+print(f"super arm4:  {sw_gts_super_arm}")
+print(f"alloc knap: {alloc[1:]}")
+
+print(f"super arm5:  {cusum_gts_super_arm}")
+print(f"alloc knap: {alloc[1:]}")
+
+print(f"super arm 5:  {gts_super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
 print(f"\n***** FINAL RESULT LEARNER GP-UCB1*****")
@@ -236,18 +299,45 @@ print(f"\tstd:\t {np.std(cusum_gpucb1_rewards):.4f}€")
 print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(cusum_gpucb1_rewards)):.4f}€")
 print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(cusum_gpucb1_rewards)):.4f}€")
 
-print(f"\n***** FINAL RESULT SW-TS*****")
+print(f"\n***** FINAL RESULT SW-GTS*****")
 print(f"days simulated: {days}")
 print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
 print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
-print(f"Learner profit:\t {sum(sw_ts_rewards):.4f}€")
+print(f"Learner profit:\t {sum(sw_gts_rewards):.4f}€")
 print("----------------------------")
 print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
 print(f"\tstd:\t {np.std(rewards_knapsack_agg):.4f}€")
-print(f"average reward:\t {np.mean(sw_ts_rewards):.4f}€")
-print(f"\tstd:\t {np.std(sw_ts_rewards):.4f}€")
-print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(sw_ts_rewards)):.4f}€")
-print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(sw_ts_rewards)):.4f}€")
+print(f"average reward:\t {np.mean(sw_gts_rewards):.4f}€")
+print(f"\tstd:\t {np.std(sw_gts_rewards):.4f}€")
+print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(sw_gts_rewards)):.4f}€")
+print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(sw_gts_rewards)):.4f}€")
+
+
+print(f"\n***** FINAL RESULT CUSUM-GTS*****")
+print(f"days simulated: {days}")
+print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
+print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"Learner profit:\t {sum(cusum_gts_rewards):.4f}€")
+print("----------------------------")
+print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
+print(f"\tstd:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"average reward:\t {np.mean(cusum_gts_rewards):.4f}€")
+print(f"\tstd:\t {np.std(cusum_gts_rewards):.4f}€")
+print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(cusum_gts_rewards)):.4f}€")
+print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(cusum_gts_rewards)):.4f}€")
+
+print(f"\n***** FINAL RESULT GTS*****")
+print(f"days simulated: {days}")
+print(f"total profit:\t {sum(rewards_knapsack_agg):.4f}€")
+print(f"standard deviation:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"Learner profit:\t {sum(gts_rewards):.4f}€")
+print("----------------------------")
+print(f"average profit:\t {np.mean(rewards_knapsack_agg):.4f}€")
+print(f"\tstd:\t {np.std(rewards_knapsack_agg):.4f}€")
+print(f"average reward:\t {np.mean(gts_rewards):.4f}€")
+print(f"\tstd:\t {np.std(gts_rewards):.4f}€")
+print(f"average regret\t {np.mean(np.array(rewards_knapsack_agg) - np.array(gts_rewards)):.4f}€")
+print(f"\tstd:\t {np.std(np.array(rewards_knapsack_agg) - np.array(gts_rewards)):.4f}€")
 
 plt.close()
 d = np.linspace(0, len(rewards_knapsack_agg), len(rewards_knapsack_agg))
@@ -261,7 +351,9 @@ axs[0].plot(d, rewards_knapsack_agg, 'g', label = "clairvoyant")
 axs[0].plot(d, gpucb1_rewards, 'r', label = "GP-UCB1")
 axs[0].plot(d, sw_gpucb1_rewards, 'b', label = "SW-GP-UCB1")
 axs[0].plot(d, cusum_gpucb1_rewards, 'c', label = "CUSUM-GP-UCB1")
-axs[0].plot(d, sw_ts_rewards, 'm', label = "SW_TS")
+axs[0].plot(d, sw_gts_rewards, 'm', label = "SW-GTS")
+axs[0].plot(d, cusum_gts_rewards, 'y', label = "CUSUM-GTS")
+axs[0].plot(d, gts_rewards, 'k', label = "GTS")
 axs[0].legend(loc = "upper left")
 
 axs[1].set_xlabel("days")
@@ -270,7 +362,9 @@ axs[1].plot(d, np.cumsum(rewards_knapsack_agg), 'g', label = "clairvoyant")
 axs[1].plot(d, np.cumsum(gpucb1_rewards), 'r', label = "GP-UCB1")
 axs[1].plot(d, np.cumsum(sw_gpucb1_rewards), 'b', label = "SW-GP-UCB1")
 axs[1].plot(d, np.cumsum(cusum_gpucb1_rewards), 'c', label = "CUSUM-GP-UCB1")
-axs[1].plot(d, np.cumsum(sw_ts_rewards), 'm', label = "SW_TS")
+axs[1].plot(d, np.cumsum(sw_gts_rewards), 'm', label = "SW-GTS")
+axs[1].plot(d, np.cumsum(cusum_gts_rewards), 'y', label = "CUSUM-GTS")
+axs[1].plot(d, np.cumsum(gts_rewards), 'k', label = "GTS")
 axs[1].legend(loc = "upper left")
 
 axs[2].set_xlabel("days")
@@ -278,7 +372,9 @@ axs[2].set_ylabel("cumulative regret")
 axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(gpucb1_rewards)), 'r', label = "GP-UCB1")
 axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(sw_gpucb1_rewards)), 'b', label = "SW-GP-UCB1")
 axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(cusum_gpucb1_rewards)), 'c', label = "CUSUM-GP-UCB1")
-axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(sw_ts_rewards)), 'm', label = "SW_TS")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(sw_gts_rewards)), 'm', label = "SW-TS")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(cusum_gts_rewards)), 'y', label = "CUSUM-GTS")
+axs[2].plot(d, np.cumsum(np.array(rewards_knapsack_agg) - np.array(gts_rewards)), 'k', label = "GTS")
 axs[2].legend(loc = "upper left")
 
 axs[3].set_xlabel("days")
@@ -286,7 +382,9 @@ axs[3].set_ylabel("regret")
 axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(gpucb1_rewards), 'r', label = "GP-UCB1")
 axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(sw_gpucb1_rewards), 'b', label = "SW-GP-UCB1")
 axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(cusum_gpucb1_rewards), 'c', label = "CUSUM-GP-UCB1")
-axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(sw_ts_rewards), 'm', label = "SW_TS")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(sw_gts_rewards), 'm', label = "SW-GTS")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(cusum_gts_rewards), 'y', label = "CUSUM-GTS")
+axs[3].plot(d, np.array(rewards_knapsack_agg) - np.array(gts_rewards), 'k', label = "GTS")
 axs[3].legend(loc = "upper left")
 
 plt.show()

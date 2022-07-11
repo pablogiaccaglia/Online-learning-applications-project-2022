@@ -5,9 +5,9 @@ import numpy as np
 class GTS_Learner(Learner):
     """ every arms induces a gaussian distribution over its expected reward """
 
-    def __init__(self, arms, prior_mean, prior_sigma=1):
+    def __init__(self, arms, prior_mean, prior_sigma=1, cusum_args = None):
         self.arms = arms
-        super().__init__(len(arms))
+        super().__init__(len(arms), cusum_args = cusum_args)
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
 

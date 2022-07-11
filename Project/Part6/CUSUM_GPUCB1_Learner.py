@@ -15,7 +15,7 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                  explorationAlpha = 0.01,
                  beta = 100.):
 
-        cusum_args = {  "samplesForRefPoint": samplesForRefPoint,
+        cusum_args = {"samplesForRefPoint": samplesForRefPoint,
                         "epsilon":            epsilon,
                         "detectionThreshold": detectionThreshold,
                         "explorationAlpha":   explorationAlpha}
@@ -40,6 +40,12 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
 
     def update(self, pulled_arm, reward):
         self.t += 1
+        if self.change_detection[pulled_arm].update(reward):
+                self.detections[pulled_arm].append(self.t)
+                self.valid_collected_rewards = []
+                self.pulled_arms = []
+                self.change_detection[pulled_arm].reset()
+
         self.update_observations(pulled_arm, reward)
         self.update_model()
 

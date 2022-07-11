@@ -7,13 +7,14 @@ from Part3.Learner import Learner
 
 
 class GPUCB1_Learner(Learner):
-    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 100., cusum_args = None):  # arms are the budgets (e.g 0,10,20...)
+    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 50., cusum_args = None):  # arms are the budgets (e.g 0,10,20...)
         super().__init__(len(arms), cusum_args)
         self.n_arms = len(arms)
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
         self.ucbs = np.ones(self.n_arms) * np.inf
+        self.pulled_arms = []
 
         """beta (optional): Hyper-parameter to tune the exploration-exploitation
             balance. If beta is large, it emphasizes the variance of the unexplored

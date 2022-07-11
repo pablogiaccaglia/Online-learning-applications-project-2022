@@ -27,7 +27,6 @@ class Learner:
         self.rewards_per_arm = [[] for _ in range(n_arms)]
         self.collected_rewards = np.array([])
         self.cd_enabled = False
-        self.pulled_arms = []  # One arm for campaign
 
         if cusum_args:
             self.cd_enabled = True
@@ -40,14 +39,6 @@ class Learner:
             self.change_detection = [CUSUM(**cusum_args) for _ in range(n_arms)]
 
     def update_observations(self, pulled_arm, reward):
-
-        if self.cd_enabled:
-            if self.change_detection[pulled_arm].update(reward):
-                self.detections[pulled_arm].append(self.t)
-                self.valid_collected_rewards = []
-                self.pulled_arms = []
-                self.change_detection[pulled_arm].reset()
-
         self.rewards_per_arm[pulled_arm].append(reward)
         self.collected_rewards = np.append(self.collected_rewards, reward)  # optimizable
 

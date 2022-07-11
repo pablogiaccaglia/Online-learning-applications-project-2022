@@ -17,10 +17,12 @@ class CUSUM:
             return 0
 
         else:
+            self.referencePoint = (self.referencePoint*(self.t-1) + sample)/self.t
             sPlus = (sample - self.referencePoint) - self.epsilon
-            sMinus = (sample - self.referencePoint) + self.epsilon
+            sMinus = -(sample - self.referencePoint) - self.epsilon
             self.gPlus = max(0, self.gPlus + sPlus)
             self.gMinus = max(0, self.gMinus + sMinus)
+
             return self.gPlus > self.detectionThreshold or self.gMinus > self.detectionThreshold
 
     def reset(self):
