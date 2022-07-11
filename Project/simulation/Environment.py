@@ -228,12 +228,14 @@ class Environment:
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index * n_classes + user_idx][budget_idx] = np.single(expected_gross_profit)
 
+        self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget
 
     def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5,
                                       n_budgets=10):
 
         # print("*" * 25 + " Knapsack rewards " + "*" * 30)
+        old_budget = self.allocated_budget
 
         available_budget = [step_size * (i + 1) for i in range(n_budgets)]
         n_campaigns = len(self.products)
@@ -255,6 +257,7 @@ class Environment:
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
 
+        self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget
 
     def __profit_per_user(self, n_users, reference_price):
@@ -306,7 +309,6 @@ class Environment:
                         u2.expected_profit(exp_number_noise[0])[i]
             profit_u3 = p3 * noise_alpha[2][i] * cmp.get_alpha_i(u3.alpha_functions[i]) * \
                         u3.expected_profit(exp_number_noise[0])[i]
-
             campaign_profits.append(profit_u1 + profit_u2 + profit_u3)
 
         # convert the pure number in euro
