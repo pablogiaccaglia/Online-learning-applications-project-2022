@@ -12,11 +12,11 @@ from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 
 """ @@@@ simulation SETUP @@@@ """
-days = 1000
+days = 200
 N_user = 200  # reference for what alpha = 1 refers to
 reference_price = 4.0
 daily_budget = 50 * 5
-n_arms = 15
+n_arms = np.ceil(np.power(days * np.log(days), 0.25))
 environment = Environment()
 
 bool_alpha_noise = True
@@ -239,7 +239,7 @@ for day in range(days):
         print(f"super arm 5:  {cusum_gts_super_arm}")
         print(f"alloc knap: {alloc[1:]}")
 
-        print(f"super arm 5:  {gts_super_arm}")
+        print(f"super arm 6:  {gts_super_arm}")
         print(f"alloc knap: {alloc[1:]}")
 
 print(f"super arm:  {gpucb1_super_arm}")
@@ -257,7 +257,7 @@ print(f"alloc knap: {alloc[1:]}")
 print(f"super arm5:  {cusum_gts_super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
-print(f"super arm 5:  {gts_super_arm}")
+print(f"super arm 6:  {gts_super_arm}")
 print(f"alloc knap: {alloc[1:]}")
 
 print(f"\n***** FINAL RESULT LEARNER GP-UCB1*****")
