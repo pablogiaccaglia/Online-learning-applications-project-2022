@@ -183,15 +183,25 @@ class Environment:
         self.campaigns[index].change_budget(budget)
         self.allocated_budget[index] = budget
 
-    def get_context_building_blocks(self, budgets_array, n_users, reference_price):
-        """ return knapsack rewards and profits for each possible split of the context"""
+    def get_context_building_blocks(self, budgets_array, prob_users, n_users, reference_price):
+        """ return knapsack rewards and profits for each possible split of the context
+            Alert -> The user probability are taken by outside env"""
+        # fixme bug here all 0 vectors returned
         # noise replication as last available data in env
         if len(budgets_array) != 4:
             raise ValueError("Illegal budget array size")
+        if sum(prob_users) <= 0.99:
+            raise ValueError("Illegal user's probability")
+
         old_budget = self.allocated_budget
         blocks_p = []
         # trick for user1 appearing 2 times
         indexes = [0, 0, 1, 2]
+
+        if len(indexes) != len(prob_users):
+            raise ValueError(f"probability of users error {len(indexes)} != {len(prob_users)}")
+        if prob_users[0] != prob_users[1]:
+            raise ValueError(f"probability of user 1 split should be uniform 0.5 != {prob_users[0]} or {prob_users[1]}")
 
         for budget_i, user_i in enumerate(indexes):
             budget = budgets_array[budget_i]
@@ -199,8 +209,8 @@ class Environment:
                 raise ValueError(f"Illegal {budget_i} budget size")
             # force a temporary budget
             self.__set_campaign_budgets(budget)
-
-            profit = np.array(self.__profit_campaign_per_user(user_i, n_users, reference_price))
+            p_user = prob_users[budget_i]   # access user probability
+            profit = np.array(self.__profit_campaign_per_user(user_i, p_user, n_users, reference_price))
             blocks_p.append(profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
@@ -288,7 +298,6 @@ class Environment:
                 exp_profit = u.expected_profit(exp_number_noise[j])[i]  # expected profit of user j over graph + noise n effect
 
                 profit_u[j] += p_u * noise_a * alpha_f_res * exp_profit
-                # todo TEST !!
 
         # convert the pure number in euro
         profit_u1_euro = profit_u[0] * n_users * reference_price
@@ -319,7 +328,7 @@ class Environment:
                 exp_profit = u.expected_profit(exp_number_noise[j])[i]  # expected profit of user j over graph + noise n effect
 
                 tmp_profit += p_u * noise_a * alpha_f_res * exp_profit
-            # todo TEST !!
+
             campaign_profits.append(tmp_profit)
 
         # convert the pure number in euro
@@ -332,23 +341,32 @@ class Environment:
 
         return tuple(campaign_profits)
 
-    def __profit_campaign_per_user(self, user_index, n_users, reference_price):
+    def __profit_campaign_per_user(self, user_index, p_user, n_users, reference_price):
         """ Not scaled user probability profit for a campaign with forced budget of caller"""
+        # fixme bug here making all to 0
         noise_alpha = self.noise_alpha
         exp_number_noise = self.exp_number_noise
         campaign_profits = []
         u = self.users[user_index]
+        old_budget = self.allocated_budget  # save old budget
+        p_u = p_user
 
         for i, cmp in enumerate(self.campaigns):
-            # can be read: expected profit with respect the total number of users and the reference price
-            profit_u = noise_alpha[user_index][i] * cmp.get_alpha_i(u.alpha_functions[i]) * \
-                       u.expected_profit(exp_number_noise[user_index])[i]
+            # cmp.change_budget(old_budget[i])  # not need to scale by user prob the budget
+
+            noise_a = noise_alpha[user_index][i]  # noise over (i,j)
+            alpha_f_res = cmp.get_alpha_i(u.alpha_functions[i])  # effect of budget over campaign (alpha function)
+            exp_profit = u.expected_profit(exp_number_noise[user_index])[i]  # expected profit of user j over graph + noise n effect
+            profit_u = noise_a * alpha_f_res * exp_profit   # expected profit of campaign not scaled by user probability
+
             campaign_profits.append(profit_u)
 
         # convert the pure number in euro
         for i, cmp_profit in enumerate(campaign_profits):
             euro_val = cmp_profit * n_users * reference_price
             campaign_profits[i] = euro_val
+
+        self.__set_campaign_budgets(old_budget)  # restore old budget
 
         return campaign_profits
 
