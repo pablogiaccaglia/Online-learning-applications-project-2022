@@ -20,11 +20,12 @@ class CombWrapper:
         self.learners = []
         self.max_b = max_budget
         self.last_knapsack_reward = []
-        # distribute arms uniformly in range (0, maxbudget)
-        self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
+        # distribute arms uniformly in range (max/n_arms, maxbudget)
+        self.arms = [int(i * max_budget / n_arms) for i in range(0, n_arms + 1)]
         # initialize one learner for each campaign
-        mean = 300
-        var = 100
+        # this init does not affect GP
+        mean = 50   # !! setting too low value can cause stalls due to cost of arms
+        var = 200
         for _ in range(n_campaigns):
             self.learners.append(learner_constructor(self.arms, mean, var))
 
@@ -33,28 +34,43 @@ class CombWrapper:
         rewards = []
         for learner in self.learners:
             idx_max, all_arms = learner.pull_arm()
-            rewards.append(all_arms)
+            # embed the cost in the combinatorial problem formulation
+            # knapsack_r = np.array(all_arms) - np.array(self.arms)
+            knapsack_r = np.array(all_arms)
+            rewards.append(knapsack_r)
         #print(f"reward matrix \n{rewards}")
         budgets = np.array(self.arms)
         k = Knapsack(rewards=np.array(rewards), budgets=budgets)
         k.solve()
         arg_max = np.argmax(k.get_output()[0][-1])
         alloc = k.get_output()[1][-1][arg_max]
-        super_arms = alloc  # todo the get of result can be optimized
         self.last_knapsack_reward = rewards
-        # return best allocation possible after combinatorial optimization problem
-        return super_arms[1:]
+        # best allocation possible after combinatorial optimization problem
+        super_arms = alloc[1:]
 
-    def update_observations(self, super_arm, env_rewards):
+        if (len(super_arms) > 5):
+            # reshape superarms in case of multi campaign knapsack
+            # knapsack output [c11,c12,c13,c21,c22,c23] -> [c11,c21, c12, c22. c13.c23]
+            group_size = int(len(super_arms) / 5)
+            a = np.array(super_arms).reshape((5, group_size))  # reshape in cluster of 3 res x 5 camp
+            tmp = np.reshape(a, len(super_arms), order='F')  # reorder per user
+            return tmp  # [ctx1|ctx2|ctx3|ctx4]  budget output in context execution
+
+        return super_arms
+
+    def update_observations(self, super_arm, env_rewards, show_warning=False):
         index_arm = self.__indexes_super_arm(super_arm)
         """print(super_arm)
         print(index_arm)
         print(env_rewards)"""
+        not_pulled = 0
         for i, learner in enumerate(self.learners):
-            # update arm of learner if extracted
-            if super_arm[i] != 0:
-                net_reward = env_rewards[i] - super_arm[i]
-                learner.update(index_arm[i], net_reward)
+            reward = np.array(env_rewards).flatten()[i]
+            learner.update(index_arm[i], reward)
+            if index_arm[i] == 0:
+                not_pulled += 1
+        if not_pulled > 0 and show_warning:
+            print(f"\n\033[93mWarning: {not_pulled}/{len(self.learners)} learners are not pulling arms")
 
     def get_gp_data(self):
         sigmas = []
