@@ -20,7 +20,7 @@ class GPTS_Learner(Learner):
         alpha = 0.5
         # with first term of RBF exploration can be regulated high value more correlation
         # distance
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(500, (1e-2, 1e2))  # to be adjusted
+        kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
                                            alpha=alpha**2,
                                            normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
