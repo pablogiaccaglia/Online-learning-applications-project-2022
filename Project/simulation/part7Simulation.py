@@ -3,6 +3,7 @@ import pandas as pd
 from Knapsack import Knapsack
 from Part3.CombWrapper import CombWrapper
 from Part3.GPTS_Learner import GPTS_Learner
+from Part3.GTS_Learner import GTS_Learner
 from simulation.Environment import Environment
 import matplotlib.pyplot as plt
 import progressbar
@@ -19,18 +20,18 @@ import progressbar
 +---------+---------+--------+
 """
 
-days = 100
+days = 40
 N_user = 200  # reference for what alpha = 1 refers to
 reference_price = 4.0
 daily_budget = 50 * 5
-n_arms = 15
-step_k = 5
-context_gen_days = 25
-interval = 40   # how often to run context gen.
+n_arms = 10
+step_k = 2
+context_gen_days = 20
+interval = 10  # how often to run context gen.
 n_budget = int(daily_budget / step_k)
 environment = Environment()
 
-bool_alpha_noise = True
+bool_alpha_noise = False
 bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = False
@@ -42,6 +43,24 @@ p_usr2 = environment.prob_users[1]
 p_usr3 = environment.prob_users[2]
 p_users = [p_usr1_s, p_usr1_w, p_usr2, p_usr3]
 """ @@@@ ---------------- @@@@ """
+# ******* Context initialization ********
+rewards_clairvoyant = []
+base_learner_rewards = []
+ctx_learner_rewards = []
+budgets_array = np.array([
+    [1, 1, 1, 1, 1],  # u 11
+    [1, 1, 1, 1, 1],  # u 12
+    [1, 1, 1, 1, 1],  # u 2
+    [1, 1, 1, 1, 1]  # u3
+]) * 50
+
+context_on = False
+target_feature = [False, False]  # start fully aggregated
+stop_context = False
+context_initialized = False
+
+# ctx_algorithm = GPTS_Learner
+ctx_algorithm = GTS_Learner
 
 
 def table_metadata(n_prod, n_users, avail_budget):
@@ -68,30 +87,6 @@ def set_budgets_arm_env(s_arm):
         environment.set_campaign_budget(i, b)
 
 
-def filtered_users(users, split_family=False, split_student=False, debug=False):
-    final_list = users.copy()
-    try:
-        if family == 1:
-            final_list.remove(users[1])
-            final_list.remove(users[2])
-        if student == 1:
-            final_list.remove(users[2])
-        if family == 0:
-            final_list.remove(users[0])
-        if student == 0:
-            final_list.remove(users[1])
-    except ValueError:
-        pass  # do nothing
-    if debug:
-        for i in final_list:
-            for inx, usr in enumerate(users):
-                if i == usr:
-                    print(f"User {inx + 1}")
-        print("\n")
-
-    return final_list
-
-
 def context_masks(split_family=False, split_student=False):
     # return a mask for the contextual basic blocks
     masks = []
@@ -115,52 +110,56 @@ def context_masks(split_family=False, split_student=False):
     return masks
 
 
-def assemble_profit(_profit_blocks, _contexts, _p_users):
+def assemble_profit(_profit_blocks, _contexts, _p_users, flatten=False):
+    """Perform addition and scale by user probability in the context"""
     assembled_profit = []
+    block = np.array(_profit_blocks).T  # transpose profit to (camp x usr)
     for mask in _contexts:
-        tmp_array = np.zeros(5)
-        for i_user, bit in enumerate(mask):
-            if bit == 1:
-                tmp_array += _profit_blocks[i_user] * _p_users[i_user]
-        assembled_profit.append(tmp_array)
-    return np.array(assembled_profit).flatten()
+        scaled_mask = np.array(mask) * np.array(_p_users)
+        context_profit = block @ scaled_mask
+        assembled_profit.append(context_profit)
+    if flatten:
+        return np.array(assembled_profit).flatten()
+
+    return np.array(assembled_profit)
 
 
-def budget_array_from_superarm(_super_arm, _contexts):
+def budget_array_from_superarm(_super_arm, _contexts, _p_users):
     """ map the super arm result with blocks of budget for every possible context participant """
+    # TESTED OK
     if len(_super_arm) / len(_contexts) != 5.0:
         raise ValueError("Super arm not compatible with context")
     budgets = np.array(_super_arm).reshape((len(_contexts), 5))
     result = np.zeros((4, 5))
     for i, ctx in enumerate(_contexts):
-        permutation = np.array(ctx).reshape((len(ctx), 1))
+        mask = np.array(ctx)
+        scaled_mask = mask * np.array(_p_users) / np.sum(mask * np.array(_p_users))
+        scaled_mask = scaled_mask.reshape((len(ctx), 1))
         b = budgets[i].reshape((1, 5))
-        result += permutation @ b
+        result += scaled_mask @ b
 
-    return result
+    return result  # matrix of scaled budgets
+
+
+def budget_array_from_k_alloc(_alloc, flatten=False):
+    """ map the super arm result with blocks of budget for every possible context participant """
+    # _alloc = [0, 1, 2, 3, 11, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 333]
+    if len(_alloc) != 16:
+        raise ValueError("Knapsack disaggregated alloc needed")
+    alloc_clean = _alloc[1:]  # remove 0
+    a = np.array(alloc_clean).reshape((5, 3))  # reshape in cluster of 3 res x 5 camp
+    tmp = np.reshape(a, len(alloc_clean), order='F')  # rorder per user
+    second_part = tmp.reshape((3, 5))  # reshape 5 camp x 3 user
+    first_part = second_part[0].copy()[None, :]  # add extra dimention for user 1 double
+    if flatten:
+        return np.concatenate((first_part, second_part), axis=0).flatten()
+    return np.concatenate((first_part, second_part), axis=0)
+
 
 def set_budgets_env(knapsack_alloc):
     for i, b in enumerate(knapsack_alloc[1:]):
         environment.set_campaign_budget(i, b)
 
-
-# ******* Context initialization ********
-rewards_clairvoyant = []
-base_learner_rewards = []
-ctx_learner_rewards = []
-budgets_array = np.array([
-    [1, 1, 1, 1, 1],  # u 11
-    [1, 1, 1, 1, 1],  # u 12
-    [1, 1, 1, 1, 1],  # u 2
-    [1, 1, 1, 1, 1]  # u3
-]) * 40
-
-context_on = False
-target_feature = [False, False]  # start fully aggregated
-stop_context = False
-context_initialized = False
-
-ctx_algorithm = GPTS_Learner
 
 # initialize base learner target and shape
 contexts = context_masks(split_family=target_feature[0], split_student=target_feature[1])
@@ -168,15 +167,18 @@ size_ctx = len(contexts)
 n_campaigns_ctx = 5 * size_ctx
 base_learner = CombWrapper(ctx_algorithm, n_campaigns_ctx, n_arms, daily_budget)
 super_arm = base_learner.pull_super_arm()
+target_feature_i = 0
+last_superarm = super_arm
 # ***************************************
+
 
 img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
 axs = axss.flatten()
 
-for day in progressbar.progressbar(range(days)):
+for day in range(days):
     # print(f"Current context: {contexts}")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, bool_alpha_noise,
+    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, step_k, bool_alpha_noise,
                                        bool_n_noise)  # object with all the day info
     # disaggregated knapsack   --------------------------------------------
     rewards, available_budget = sim_obj["reward_k"]
@@ -187,68 +189,104 @@ for day in progressbar.progressbar(range(days)):
 
     arg_max = np.argmax(K.get_output()[0][-1])
     alloc = K.get_output()[1][-1][arg_max]
-    reward = K.get_output()[0][-1][arg_max]
-    rewards_clairvoyant.append(reward)
+    reward = K.get_output()[0][-1][arg_max]  # reward of K is correct and is net_profit
 
-    # todo debug clairvoyant since gp is better probably misreport of reward
+    # print(f"\nclairvoyant alloc: {budget_array_from_k_alloc(alloc, flatten=True)}")
+    b_knap = budget_array_from_k_alloc(alloc)  # budgets vector for contextualized env
+    profit_blocks = environment.get_context_building_blocks(budgets_array=b_knap,
+                                                            n_users=N_user,
+                                                            reference_price=reference_price)  # test clairvoyant on env
+    gross_profit_k_env = np.sum(assemble_profit(profit_blocks, contexts, p_users))
+    net_profit_k_env = gross_profit_k_env - np.sum(alloc)
+    # print(f"\nrew clair: {net_profit_k_env}")
+    # print(f"budget clair: {np.sum(alloc)}")
+    rewards_clairvoyant.append(net_profit_k_env)
+
     # -------------------------------------------------------------------------
     if day == interval:
-        context_on = True
+        if target_feature_i <= 1:
+            context_on = True
+            last_superarm = super_arm  # save arm of possible old learner
+            print(f"context ON - day {day}")
+            target_feature[target_feature_i] = True  # split for next feature
+            target_feature_i += 1
+            start_day = day
+
     if context_on:
+        # generate contexts list of context masks
         contexts = context_masks(split_family=target_feature[0], split_student=target_feature[1])
         size_ctx = len(contexts)
 
         if not context_initialized:
+            # initialize candidate learner
             n_campaigns_ctx = 5 * size_ctx
             ctx_learner = CombWrapper(ctx_algorithm, n_campaigns_ctx, n_arms, daily_budget)
-            super_arm = ctx_learner.pull_super_arm()
+            super_arm = ctx_learner.pull_super_arm()  # pull arm for new learner
             context_initialized = True
 
-        budgets_array = budget_array_from_superarm(super_arm, contexts)
-        # get profits from env (need super arm)
+        # generate budget matrix from pulled superarm
+        budgets_array = budget_array_from_superarm(super_arm, contexts, p_users)
+        # get gross profits from env
         profit_blocks = environment.get_context_building_blocks(budgets_array=budgets_array,
                                                                 n_users=N_user,
                                                                 reference_price=reference_price)
+        # gross profit used as reward to the learner
         learner_reward = assemble_profit(profit_blocks, contexts, p_users)
 
         ctx_learner.update_observations(super_arm, learner_reward)
+        # collect net profit of learner (net reward)
         ctx_learner_rewards.append(np.sum(learner_reward) - np.sum(super_arm))
+        # todo: decide what to do with htis part, it is provisory to follow the ctx learner
+        base_learner_rewards.append(np.sum(learner_reward) - np.sum(super_arm))
+        # print(f"Bandit alloc: {super_arm}")
 
         # pull super arm for tomorrow
         super_arm = ctx_learner.pull_super_arm()
+        # print(f"\nctx learner rew : {np.sum(learner_reward) - np.sum(super_arm)}")
 
-        # print(f"blovk profit {profit_blocks}")
-        # print(f"profit ready for bandit {ctx_profit}")
-        # print(f"Env profits : {sim_obj['profit_campaign']}")
-
+        if day == start_day + context_gen_days:
+            # stop generator
+            print(f"context OFF - day {day}")
+            context_on = False
+            context_initialized = False
+            split_condition = True  # todo: develop here tecnique for splitting + context management
+            if split_condition:
+                base_learner = ctx_learner
+            else:
+                super_arm = last_superarm
     else:
-        budgets_array = budget_array_from_superarm(super_arm, contexts)
+        budgets_array = budget_array_from_superarm(super_arm, contexts, p_users)
         # get profits from env (need super arm)
         profit_blocks = environment.get_context_building_blocks(budgets_array=budgets_array,
                                                                 n_users=N_user,
                                                                 reference_price=reference_price)
         learner_reward = assemble_profit(profit_blocks, contexts, p_users)
-        base_learner.update_observations(super_arm, learner_reward)
+
+        if day <= 6:
+            learner_reward = learner_reward.flatten() + super_arm * 1.2
+
+        base_learner.update_observations(super_arm, learner_reward.flatten())
+        # print(f"\nlearner rew : {np.sum(learner_reward) - np.sum(super_arm)}")
+        # print(f"budget ler: {np.sum(super_arm)}")
         base_learner_rewards.append(np.sum(learner_reward) - np.sum(super_arm))
-        ctx_learner_rewards.append(np.sum(learner_reward) - np.sum(super_arm))
+        # ctx_learner_rewards.append(np.sum(learner_reward) - np.sum(super_arm))
 
         # pull super arm for tomorrow
         super_arm = base_learner.pull_super_arm()
 
-    if day % 10 == 0:
-        axs[0].cla()
-    if day % 2 == 0:
-        x = available_budget
-        d = np.linspace(0, len(rewards_clairvoyant), len(rewards_clairvoyant))
-        axs[0].set_xlabel("days")
-        axs[0].set_ylabel("reward")
-        axs[0].plot(d, rewards_clairvoyant)
-        if context_on:
-            axs[0].plot(d, ctx_learner_rewards)
-        else:
-            axs[0].plot(d, base_learner_rewards)
-        plt.pause(0.1)
-
+        if day % 4 == 0:
+            axs[0].cla()
+        if day % 1 == 0:
+            x = available_budget
+            d = np.linspace(0, len(rewards_clairvoyant), len(rewards_clairvoyant))
+            axs[0].set_xlabel("days")
+            axs[0].set_ylabel("reward")
+            axs[0].plot(d, rewards_clairvoyant)
+            if context_on:
+                axs[0].plot(d, ctx_learner_rewards)
+            else:
+                axs[0].plot(d, base_learner_rewards)
+            plt.pause(0.1)
 plt.show()
 
 # ********* statistical measures *********************

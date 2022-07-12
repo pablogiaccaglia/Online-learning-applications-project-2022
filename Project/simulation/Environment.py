@@ -350,6 +350,32 @@ class Environment:
             euro_val = cmp_profit * n_users * reference_price
             campaign_profits[i] = euro_val
 
-        campaign_profits.append(np.sum(campaign_profits))
+        return campaign_profits
 
-        return tuple(campaign_profits)
+    def __rewards_knapsack_per_user(self, user_index, n_users, reference_price, step_size=5, n_budgets=10):
+
+        """ Knapsack reward of a single user not scaled by user probability"""
+        noise_alpha = self.noise_alpha
+        exp_number_noise = self.exp_number_noise
+        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
+        n_campaigns = len(self.products)
+        u = self.users[user_index]
+
+        old_budget = self.allocated_budget  # save old budget
+
+        rewards = []
+        for _ in range(n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
+
+        for cmp_index in range(n_campaigns):
+            for budget_idx in range(n_budgets):
+                self.campaigns[cmp_index].change_budget(available_budget[budget_idx])
+                alpha = self.campaigns[cmp_index].get_alpha_i(u.alpha_functions[cmp_index]) * \
+                        noise_alpha[user_index][cmp_index]
+                value_per_click = u.expected_profit(exp_number_noise[user_index])[cmp_index]
+                gross_profit = self.prob_users[user_index] * alpha * value_per_click * n_users * reference_price
+                rewards[cmp_index][budget_idx] += np.single(gross_profit)
+
+        self.__set_campaign_budgets(old_budget)  # restore old budget
+        return rewards, available_budget
