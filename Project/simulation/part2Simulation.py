@@ -7,10 +7,11 @@ import progressbar
 
 
 """ @@@@ simulation SETUP @@@@ """
-days = 3
+days = 6
 N_user = 1000  # reference for what alpha = 1 refers to
 reference_price = 3.5
-daily_budget = 1500
+daily_budget = 800
+step_k=2
 environment = Environment()
 
 bool_alpha_noise = False
@@ -44,7 +45,7 @@ for day in progressbar.progressbar(range(days)):
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, bool_alpha_noise,
+    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,step_k , bool_alpha_noise,
                                        bool_n_noise)  # object with all the day info
     profit1, profit2, profit3, daily_profit = sim_obj["profit"]
     p_cmp_1, p_cmp_2, p_cmp_3, p_cmp_4, p_cmp_5, tot_camp = sim_obj["profit_campaign"]
@@ -57,9 +58,22 @@ for day in progressbar.progressbar(range(days)):
     K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
     K.solve()
 
-    alloc = K.get_output()[1][-1][-1]
-    reward = K.get_output()[0][-1][-1]
+    arg_max = np.argmax(K.get_output()[0][-1])
+    alloc = K.get_output()[1][-1][arg_max]
+    reward = K.get_output()[0][-1][arg_max]
     rewards_aggregated.append(reward)
+
+    print(f"best allocation: {alloc}, total budget: {sum(alloc)}")
+    print(f"reward: {reward}")
+    set_budgets_env(alloc)
+    sim_obj_2 = environment.replicate_last_day(N_user,
+                                               reference_price,
+                                               bool_n_noise,
+                                               bool_n_noise)  # object with all the day info
+    profit1, profit2, profit3, daily_profit = sim_obj_2["profit"]
+    print(
+        f"test allocation on env:\n\t || total:{daily_profit:.2f}€ || u1:{profit1:.2f}€ || u2:{profit2:.2f}€ || u3:{profit3:.2f}€")
+
     if printBasicDebug:
         print("\n Aggregated")
         print(f"best allocation: {alloc}, total budget: {sum(alloc)}")
@@ -72,7 +86,8 @@ for day in progressbar.progressbar(range(days)):
         profit1, profit2, profit3, daily_profit = sim_obj_2["profit"]
         print(
             f"test allocation on env:\n\t || total:{daily_profit:.2f}€ || u1:{profit1:.2f}€ || u2:{profit2:.2f}€ || u3:{profit3:.2f}€")
-
+    print("-" * 10 + " Independent rewards Table " + "-" * 10)
+    print(pd.DataFrame(rewards, columns=col_labels, index=row_label_rewards))
     if printKnapsackInfo:
         print("-" * 10 + " Independent rewards Table " + "-" * 10)
         print(pd.DataFrame(rewards, columns=col_labels, index=row_label_rewards))
@@ -89,10 +104,12 @@ for day in progressbar.progressbar(range(days)):
     K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
     K.solve()
 
-    alloc = K.get_output()[1][-1][-1]
-    reward = K.get_output()[0][-1][-1]
+    arg_max = np.argmax(K.get_output()[0][-1])
+    alloc = K.get_output()[1][-1][arg_max]
+    reward = K.get_output()[0][-1][arg_max]
     rewards_disaggregated.append(reward)
-
+    print("-" * 10 + " Independent rewards Table " + "-" * 10)
+    print(pd.DataFrame(rewards, columns=col_labels, index=row_label_rewards))
     if printBasicDebug:
         alloc = K.get_output()[1][-1][-1]
         reward = K.get_output()[0][-1][-1]
