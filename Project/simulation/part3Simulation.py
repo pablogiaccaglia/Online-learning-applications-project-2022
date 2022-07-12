@@ -62,6 +62,7 @@ def set_budgets_arm_env(s_arm):
 We use knapsack aggregated for benchmark since running knapsack disaggregated is too computational demanding"""
 
 rewards_knapsack_agg = []
+rewards_disaggregated = []
 
 learner_rewards = []
 # solve comb problem for tomorrow
@@ -76,6 +77,18 @@ for day in progressbar.progressbar(range(days)):
     sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,step_k, bool_alpha_noise,
                                        bool_n_noise)  # object with all the day info
 
+    # disaggregated knapsack   --------------------------------------------
+    rewards, available_budget = sim_obj["reward_k"]
+    row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), len(users), available_budget)
+    K = Knapsack(rewards=rewards, budgets=np.array(available_budget))
+    K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
+    K.solve()
+
+    arg_max = np.argmax(K.get_output()[0][-1])
+    alloc = K.get_output()[1][-1][arg_max]
+    reward = K.get_output()[0][-1][arg_max]
+    rewards_disaggregated.append(reward)
+    # -----------------------------------------------------------------------------
     # aggregated knapsack   --------------------------------------------
     rewards, available_budget = sim_obj["reward_k_agg"]
     row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), 1, available_budget)
@@ -98,25 +111,6 @@ for day in progressbar.progressbar(range(days)):
                                                bool_n_noise)
 
     rewards_knapsack_agg.append(sim_obj_2["profit_campaign"][-1] - np.sum(k_alloc))
-
-    if printBasicDebug:
-        print("\n Aggregated")
-        print(f"best allocation: {alloc}, total budget: {sum(alloc)}")
-        print(f"reward: {reward}")
-        set_budgets_knapsack_env(alloc)
-        sim_obj_2 = environment.replicate_last_day(N_user,
-                                                   reference_price,
-                                                   bool_n_noise,
-                                                   bool_n_noise)  # object with all the day info
-        profit1, profit2, profit3, daily_profit = sim_obj_2["profit"]
-        print(
-            f"test allocation on env:\n\t || total:{daily_profit:.2f}€ || u1:{profit1:.2f}€ || u2:{profit2:.2f}€ || u3:{profit3:.2f}€")
-        print("-" * 10 + " Independent rewards Table " + "-" * 10)
-        print(pd.DataFrame(rewards, columns=col_labels, index=row_label_rewards))
-        print("\n" + "*" * 25 + " Aggregated Knapsack execution " + "*" * 30 + "\n")
-        K.pretty_print_dp_table()  # prints the final dynamic programming table
-        """K.pretty_print_output(
-            print_last_row_only=False)"""  # prints information about last row of the table, including allocations
     # -----------------------------------------------------------------
 
     # GTS and GPTS   --------------------------------------------
@@ -178,6 +172,7 @@ for day in progressbar.progressbar(range(days)):
         axs[5].set_ylabel("reward")
         axs[5].plot(d, rewards_knapsack_agg)
         axs[5].plot(d, learner_rewards)
+        axs[5].plot(d, rewards_disaggregated)
         plt.pause(0.1)
 
 # **** print profit functions and learned ones ***********
