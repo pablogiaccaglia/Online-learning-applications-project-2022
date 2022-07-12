@@ -14,19 +14,23 @@ import matplotlib.pyplot as plt
 
 """ @@@@ simulation SETUP @@@@ """
 days = 100
-N_user = 200  # reference for what alpha = 1 refers to
+N_user = 400  # reference for what alpha = 1 refers to
 reference_price = 4.0
-daily_budget = 50 * 5
-n_arms = 15
+daily_budget = 70 * 5
+n_arms = 20
+step_k = 2
 environment = Environment()
 
-bool_alpha_noise = True
+boost_start = True
+boost_discount = 0.5  # boost discount wr to the highest reward
+boost_bias = daily_budget / 5 # ensure a positive reward when all pull 0
+bool_alpha_noise = False
 bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
-#comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
+# comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
 comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
 """ @@@@ ---------------- @@@@ """
 
@@ -69,7 +73,7 @@ for day in progressbar.progressbar(range(days)):
     if printBasicDebug:
         print(f"\n***** DAY {day} *****")
     users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
-    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, bool_alpha_noise,
+    sim_obj = environment.play_one_day(N_user, reference_price, daily_budget,step_k, bool_alpha_noise,
                                        bool_n_noise)  # object with all the day info
 
     # aggregated knapsack   --------------------------------------------
@@ -82,7 +86,18 @@ for day in progressbar.progressbar(range(days)):
     arg_max = np.argmax(K.get_output()[0][-1])
     alloc = K.get_output()[1][-1][arg_max]
     reward = K.get_output()[0][-1][arg_max]
-    rewards_knapsack_agg.append(reward)
+    # rewards_knapsack_agg.append(reward)
+
+    # set knapsack solution on env
+    k_alloc = alloc[1:]
+    set_budgets_arm_env(k_alloc)
+    # test result on env
+    sim_obj_2 = environment.replicate_last_day(N_user,
+                                               reference_price,
+                                               bool_n_noise,
+                                               bool_n_noise)
+
+    rewards_knapsack_agg.append(sim_obj_2["profit_campaign"][-1] - np.sum(k_alloc))
 
     if printBasicDebug:
         print("\n Aggregated")
@@ -113,8 +128,19 @@ for day in progressbar.progressbar(range(days)):
                                                bool_n_noise,
                                                bool_n_noise)
 
-    comb_learner.update_observations(super_arm, sim_obj_2["profit_campaign"][:-1])
-    learner_rewards.append(sim_obj_2["profit_campaign"][-1] - np.sum(super_arm))
+    profit_env = sim_obj_2["profit_campaign"][-1]
+    learner_rewards.append(profit_env - np.sum(super_arm))
+    profit_list = list(sim_obj_2["profit_campaign"][:-1])
+    if boost_start and day <= 4:
+        for i, s_arm in enumerate(super_arm):
+            if s_arm == 0:
+                # if a learner is pulling 0 give an high reward in an higher arm
+                back_offset = np.random.randint(1, 4)
+                forced_arm = np.sort(super_arm, axis=None)[-back_offset] # take random high arm value
+                profit_list[i] = np.max(profit_list) * boost_discount + boost_bias
+                super_arm[i] = forced_arm
+
+    comb_learner.update_observations(super_arm, profit_list)
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
