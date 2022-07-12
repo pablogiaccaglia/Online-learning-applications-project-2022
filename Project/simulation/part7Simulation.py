@@ -54,7 +54,7 @@ budgets_array = np.array([
 ]) * 50
 
 context_on = False
-target_feature = [False, False]  # start fully aggregated
+target_feature = [True, False]  # start fully aggregated
 stop_context = False
 context_initialized = False
 
@@ -200,7 +200,6 @@ for day in progressbar.progressbar(range(days)):
                                                             reference_price=reference_price)  # test clairvoyant on env
     gross_profit_k_env = np.sum(assemble_profit(profit_blocks, contexts, p_users))
     net_profit_k_env = gross_profit_k_env - np.sum(alloc)
-    # fixme Finish to test 1 split and 2 split context, the aggregated case is working knap == env
     # print(f"\nrew clair: {net_profit_k_env}")
     # print(f"budget clair: {np.sum(alloc)}")
     rewards_clairvoyant.append(net_profit_k_env)
