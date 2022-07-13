@@ -1,4 +1,4 @@
-from Part3.GPUCB1_Learner import GPUCB1_Learner
+from GPUCB1_Learner import GPUCB1_Learner
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -13,7 +13,7 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                  epsilon = 0.05,
                  detectionThreshold = 20,
                  explorationAlpha = 0.01,
-                 beta = 100.):
+                 beta = 50.):
 
         cusum_args = {"samplesForRefPoint": samplesForRefPoint,
                         "epsilon":            epsilon,
@@ -21,6 +21,8 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                         "explorationAlpha":   explorationAlpha}
 
         super().__init__(arms, prior_mean, prior_sigma = prior_sigma, beta = beta, cusum_args = cusum_args)
+
+        self.bandit_name = 'CUSUM-GP-UCB1'
 
     # Same as gts_learner
     def pull_arm(self) -> np.array:
@@ -59,3 +61,6 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                 return_std = True)
         # force sigma>0. It shouldn't be an issue anyway
         self.sigmas = np.maximum(self.sigmas, 1e-2)
+
+    def reset(self):
+        super(CusumGPUCB1Learner, self).reset()

@@ -2,9 +2,7 @@ import random
 from random import randint
 from typing import Union
 import pandas as pd
-from random import uniform
 import numpy as np
-from Graph import Graph
 from random import uniform
 
 from LearnableGraph import LearnableGraph
@@ -124,6 +122,19 @@ def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, 
 
 def no_noise_matrix(n_user=3, n_product=5):
     return [[1 for c in range(n_product)] for r in range(n_user)]
+
+
+def table_metadata(n_prod, n_users, avail_budget):
+    _col_labels = [str(budget) for budget in avail_budget]
+
+    _row_label_rewards = []
+    _row_labels_dp_table = ['0']
+    for i in range(1, n_prod + 1):
+        for j in range(1, n_users + 1):
+            # Cij -> campaign i and user j
+            _row_label_rewards.append("C" + str(i) + str(j))
+            _row_labels_dp_table.append("+C" + str(i) + str(j))
+    return _row_label_rewards, _row_labels_dp_table, _col_labels
 
 
 def get_prettyprint_array(arr, row_labels = None, col_labels = None):

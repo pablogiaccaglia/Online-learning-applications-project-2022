@@ -1,4 +1,4 @@
-from Part3.Learner import Learner
+from Learner import Learner
 import numpy as np
 
 
@@ -10,6 +10,9 @@ class GTS_Learner(Learner):
         super().__init__(len(arms), cusum_args = cusum_args)
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
+        self.prior_mean = prior_mean
+        self.prior_sigma = prior_sigma
+        self.bandit_name = 'GTS'
 
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""
@@ -24,7 +27,9 @@ class GTS_Learner(Learner):
         n_samples = len(self.rewards_per_arm[pulled_arm])
 
         if n_samples > 1:  # update std of pulled arm
-            """print(f"list: {self.rewards_per_arm}")
-            print(f"{pulled_arm} -> {self.rewards_per_arm[pulled_arm]}")
-            print(f"Update sigma gts {np.std(self.rewards_per_arm[pulled_arm]) / n_samples}")"""
             self.sigmas[pulled_arm] = np.std(self.rewards_per_arm[pulled_arm]) / n_samples
+
+    def reset(self):
+        super(GTS_Learner, self).reset()
+        self.means = np.ones(self.n_arms) * self.prior_mean
+        self.sigmas = np.ones(self.n_arms) * self.prior_sigma

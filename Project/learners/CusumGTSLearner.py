@@ -1,4 +1,4 @@
-from Part3.GTS_Learner import GTS_Learner
+from GTS_Learner import GTS_Learner
 import numpy as np
 
 
@@ -18,7 +18,9 @@ class CusumGTSLearner(GTS_Learner):
                       "explorationAlpha":   explorationAlpha}
 
         super().__init__(arms, prior_mean = prior_mean, prior_sigma = prior_sigma, cusum_args = cusum_args)
-        self.window_collected_rewards_per_arm = [[] for _ in range(len(arms))]
+        self.window_collected_rewards_per_arm = [[] for _ in range(self.n_arms)]
+
+        self.bandit_name = 'CUSUM-GTS'
 
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""
@@ -41,3 +43,7 @@ class CusumGTSLearner(GTS_Learner):
 
         if n_samples > 1:  # update std of pulled arm
             self.sigmas[pulled_arm] = np.std(self.window_collected_rewards_per_arm[pulled_arm]) / n_samples
+
+    def reset(self):
+        super(CusumGTSLearner, self).reset()
+        self.window_collected_rewards_per_arm = [[] for _ in range(self.n_arms)]

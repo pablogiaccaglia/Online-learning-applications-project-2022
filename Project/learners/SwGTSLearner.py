@@ -1,4 +1,4 @@
-from Part3.GTS_Learner import GTS_Learner
+from GTS_Learner import GTS_Learner
 import numpy as np
 
 
@@ -7,7 +7,8 @@ class SwGTSLearner(GTS_Learner):
     def __init__(self, arms, prior_mean, prior_sigma = 1, window_size = 3):
         super().__init__(arms, prior_mean = prior_mean, prior_sigma = prior_sigma)
         self.window_size = window_size
-        self.window_collected_rewards_per_arm = [[] for _ in range(len(arms))]
+        self.window_collected_rewards_per_arm = [[] for _ in range(self.n_arms)]
+        self.bandit_name = 'SW-GTS'
 
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""
@@ -31,3 +32,7 @@ class SwGTSLearner(GTS_Learner):
 
         if n_samples > 1:  # update std of pulled arm
             self.sigmas[pulled_arm] = np.std(self.window_collected_rewards_per_arm[pulled_arm]) / n_samples
+
+    def reset(self):
+        super(SwGTSLearner, self).reset()
+        self.window_collected_rewards_per_arm = [[] for _ in range(self.n_arms)]

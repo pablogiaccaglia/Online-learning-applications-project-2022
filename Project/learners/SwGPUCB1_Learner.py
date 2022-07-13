@@ -3,11 +3,11 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Part3.Learner import Learner
+from Learner import Learner
 
 
 class SwGPUCB1_Learner(Learner):
-    def __init__(self, arms, prior_mean, prior_sigma = 1, window_size = 3, beta = 100.):  # arms are the budgets (e.g 0,10,20...)
+    def __init__(self, arms, prior_mean, prior_sigma = 1, window_size = 3, beta = 50.):  # arms are the budgets (e.g 0,10,20...)
         super().__init__(len(arms))
         self.n_arms = len(arms)
         self.arms = arms
@@ -19,6 +19,7 @@ class SwGPUCB1_Learner(Learner):
         self.ucbs = np.ones(self.n_arms) * np.inf
         self.window_size = window_size
         self.window_collected_rewards = np.array([])
+        self.bandit_name = 'SW-GP-UCB1'
 
         """beta (optional): Hyper-parameter to tune the exploration-exploitation
             balance. If beta is large, it emphasizes the variance of the unexplored
@@ -83,3 +84,19 @@ class SwGPUCB1_Learner(Learner):
         arms_value = np.random.normal(self.means, self.sigmas)
         idx = np.argmax(arms_value)
         return idx, arms_value
+
+    def reset(self):
+        super(SwGPUCB1_Learner, self).reset()
+        self.means = np.ones(self.n_arms) * self.prior_mean
+        self.sigmas = np.ones(self.n_arms) * self.prior_sigma
+        self.pulled_arms = []  # One arm for campaign
+        self.ucbs = np.ones(self.n_arms) * np.inf
+        self.window_collected_rewards = np.array([])
+
+        alpha = 0.5
+        kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
+        self.gp = GaussianProcessRegressor(kernel = kernel,
+                                           alpha = alpha ** 2,
+                                           # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
+                                           #                          USING IT RIGHT. NORMALIZE Y MANUALLY
+                                           n_restarts_optimizer = 9)

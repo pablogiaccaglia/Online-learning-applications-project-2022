@@ -3,7 +3,7 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Part3.Learner import Learner
+from Learner import Learner
 
 
 class GPTS_Learner(Learner):
@@ -13,6 +13,10 @@ class GPTS_Learner(Learner):
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
         self.sigmas = np.ones(self.n_arms) * prior_sigma
+        self.prior_mean = prior_mean
+        self.prior_sigma = prior_sigma
+        self.pulled_arms = []
+        self.bandit_name = 'GP-TS'
 
         alpha = 0.5
         # with first term of RBF exploration can be regulated high value more correlation
@@ -20,7 +24,7 @@ class GPTS_Learner(Learner):
         kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel = kernel,
                                            alpha = alpha ** 2,
-                                           normalize_y = True,  # TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
+                                           # normalize_y = True,  # TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
                                            #                         USING IT RIGHT. NORMALIZE Y MANUALLY
                                            n_restarts_optimizer = 9)
 
@@ -52,3 +56,19 @@ class GPTS_Learner(Learner):
         arms_value = np.random.normal(self.means, self.sigmas)
         idx = np.argmax(arms_value)
         return idx, arms_value
+
+    def reset(self):
+        super(GPTS_Learner, self).reset()
+
+        self.means = np.ones(self.n_arms) * self.prior_mean
+        self.sigmas = np.ones(self.n_arms) * self.prior_sigma
+
+        alpha = 0.5
+        kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
+        self.gp = GaussianProcessRegressor(kernel=kernel,
+                                           alpha=alpha ** 2,
+                                           # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
+                                           #                          USING IT RIGHT. NORMALIZE Y MANUALLY
+                                           n_restarts_optimizer=9)
+
+        self.pulled_arms = []

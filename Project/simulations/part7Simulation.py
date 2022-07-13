@@ -1,14 +1,12 @@
 import numpy as np
-import pandas as pd
-from Knapsack import Knapsack
-from Part3.CombWrapper import CombWrapper
-from Part3.GPTS_Learner import GPTS_Learner
-from Part3.GTS_Learner import GTS_Learner
-from simulation.Environment import Environment
+from knapsack.Knapsack import Knapsack
+from learners.CombWrapper import CombWrapper
+from GPTS_Learner import GPTS_Learner
+from simulations.Environment import Environment
 import matplotlib.pyplot as plt
 import progressbar
 
-""" @@@@ simulation SETUP @@@@ """
+""" @@@@ simulations SETUP @@@@ """
 
 """
 +---------+---------+--------+
@@ -145,7 +143,7 @@ def budget_array_from_k_alloc(_alloc, flatten=False):
     """ map the super arm result with blocks of budget for every possible context participant """
     # _alloc = [0, 1, 2, 3, 11, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 333]
     if len(_alloc) != 16:
-        raise ValueError("Knapsack disaggregated alloc needed")
+        raise ValueError("knapsack disaggregated alloc needed")
     alloc_clean = _alloc[1:]  # remove 0
     a = np.array(alloc_clean).reshape((5, 3))  # reshape in cluster of 3 res x 5 camp
     tmp = np.reshape(a, len(alloc_clean), order='F')  # rorder per user
@@ -166,7 +164,7 @@ contexts = context_masks(split_family=target_feature[0], split_student=target_fe
 size_ctx = len(contexts)
 start_offset = 0
 n_campaigns_ctx = 5 * size_ctx
-base_learner = CombWrapper(ctx_algorithm, n_campaigns_ctx, n_arms, daily_budget)
+base_learner = CombWrapper(ctx_algorithm, n_campaigns_ctx, n_arms, daily_budget, is_ucb = False, is_gaussian = True)
 super_arm = base_learner.pull_super_arm()
 target_feature_i = 0
 last_superarm = super_arm
@@ -178,7 +176,7 @@ axs = axss.flatten()
 
 for day in progressbar.progressbar(range(days)):
     # print(f"Current context: {contexts}")
-    users, products, campaigns, allocated_budget, prob_users = environment.get_core_entities()
+    users, products, campaigns, allocated_budget, prob_users, _ = environment.get_core_entities()
     sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, step_k, bool_alpha_noise,
                                        bool_n_noise)  # object with all the day info
     # disaggregated knapsack   --------------------------------------------
@@ -381,7 +379,7 @@ for day in progressbar.progressbar(range(days)):
     # disaggregated knapsack   --------------------------------------------
     rewards, available_budget = sim_obj["reward_k"]
     row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), len(users), available_budget)
-    K = Knapsack(rewards=rewards, budgets=np.array(available_budget))
+    K = knapsack(rewards=rewards, budgets=np.array(available_budget))
     K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
     K.solve()
 
@@ -417,7 +415,7 @@ for day in progressbar.progressbar(range(days)):
 """    # run knapsack
     rewards, available_budget = sim_obj["reward_k_agg"]
     row_label_rewards, row_labels_dp_table, col_labels = table_metadata(len(products), 1, available_budget)
-    K = Knapsack(rewards=rewards, budgets=np.array(available_budget))
+    K = knapsack(rewards=rewards, budgets=np.array(available_budget))
     K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
     K.solve()
 

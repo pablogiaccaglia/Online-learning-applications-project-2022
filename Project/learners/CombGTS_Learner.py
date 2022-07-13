@@ -1,7 +1,6 @@
-from Part3.GTS_Learner import GTS_Learner
-from Part3.Learner import Learner
+from GTS_Learner import GTS_Learner
 import numpy as np
-from Knapsack import Knapsack
+from knapsack.Knapsack import Knapsack
 
 
 class CombGTS_Learner:
