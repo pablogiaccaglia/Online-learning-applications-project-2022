@@ -1,5 +1,7 @@
+import os
 import random
 from random import randint
+from time import sleep
 from typing import Union
 
 import pandas as pd
@@ -8,6 +10,7 @@ from random import uniform
 
 from entities.LearnableGraph import LearnableGraph
 from entities.Graph import Graph
+
 
 def get_probabilities(quantity, padding):
     """it return a random list of probabilities that sum to 1-padding"""
@@ -52,6 +55,7 @@ def random_fully_connected_unknown_graph(products = []):
                                           padding = None,
                                           weighted = False,
                                           known = False)
+
 
 def get_ecommerce_graph(products = [], padding = 0.1):
     return __get_graph_specify_neighbours(products = products,
@@ -110,7 +114,7 @@ def new_alpha_function(saturation_speed = 1, max_value = 1, activation = 0.1):
     return lambda x: (-1 + 2 / (1 + np.exp(- saturation_speed * (x - activation)))) * max_value
 
 
-def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, n_product=5):
+def noise_matrix_alpha(max_reduction = 0.15, max_global_influence = 0.05, n_user = 3, n_product = 5):
     """ return a 2D list: one row for user and column for products
         it returns the multiplier for a stochastic reduction on alpha function """
     global_influence = uniform(0.0, max_global_influence)  # set day trend
@@ -121,7 +125,7 @@ def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, 
     ]
 
 
-def no_noise_matrix(n_user=3, n_product=5):
+def no_noise_matrix(n_user = 3, n_product = 5):
     return [[1 for c in range(n_product)] for r in range(n_user)]
 
 
@@ -140,3 +144,24 @@ def table_metadata(n_prod, n_users, avail_budget):
 
 def get_prettyprint_array(arr, row_labels = None, col_labels = None):
     return pd.DataFrame(arr, columns = col_labels, index = row_labels)
+
+
+def clear_output(wait = True, keep_scroll_back = False):
+
+    # Waiting for 1 second to clear the screen
+    if wait:
+        sleep(0.5)
+
+    if keep_scroll_back:
+        """# Clearing the Screen keeping scroll back
+        # posix is os name for linux or mac
+        if os.name == 'posix':
+            os.system('clear')
+        # else screen will be cleared for windows
+        else:
+            os.system('cls')"""
+
+    else:
+        os.system('cls' if os.name == 'nt' else "printf '\033c'")
+
+

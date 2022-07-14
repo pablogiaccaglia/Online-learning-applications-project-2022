@@ -146,7 +146,9 @@ class OnlineWeightsLearner:
 
         # Main procedure
         for r in range(simulations):
-            print("Iteration: " + str(r + 1) + "/" + str(simulations), end = "")
+
+            if not silent:
+                print("Iteration: " + str(r + 1) + "/" + str(simulations), end = "")
             # epsilon = (1 - r / monte_carlo_repetitions) ** 2
             seeds = OnlineWeightsLearner.__choose_seeds_from_sampling(graph = graph,
                                                                       monte_carlo_repetitions = monte_carlo_repetitions)

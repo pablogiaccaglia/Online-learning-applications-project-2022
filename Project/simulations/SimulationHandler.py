@@ -9,7 +9,7 @@ from knapsack.Knapsack import Knapsack
 from entities import Utils as util
 import matplotlib.pyplot as plt
 from learners.CombWrapper import CombWrapper
-
+from tqdm import tqdm
 
 class SimulationHandler:
 
@@ -92,6 +92,11 @@ class SimulationHandler:
 
         for experiment in range(self.experiments):
 
+            util.clear_output()
+
+            if True:
+                print(f"\n***** EXPERIMENT {experiment + 1} *****")
+
             self.super_arms = []
 
             for index, learner in enumerate(self.learners):
@@ -107,7 +112,7 @@ class SimulationHandler:
 
             self.learners_rewards_per_day = [[] for _ in range(len(self.learners))]
 
-            for day in range(self.days):
+            for day in tqdm(range(self.days)):
 
                 if self.is_unknown_graph:
                     self.environment.set_user_graphs(self.real_graphs)  # set real real_graphs for clavoyrant algorithm
@@ -243,7 +248,6 @@ class SimulationHandler:
 
         clairvoyant_rewards_per_experiment_t2 = np.array(self.clairvoyant_rewards_per_experiment_t2)
         learners_rewards_per_experiment = np.array(self.learners_rewards_per_experiment)
-        print(self.clairvoyant_rewards_per_experiment_t1)
 
         if self.clairvoyant_type != 'both':
             print(f"\n***** FINAL RESULT CLAIRVOYANT ALGORITHM {self.clairvoyant_type.upper()} *****")
