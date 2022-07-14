@@ -180,6 +180,22 @@ def get_colors():
 
     colors = [CB91_Blue, CB91_Amber, CB91_Purple, CB91_Green, CB91_Pink, CB91_Violet, CB91_Red, CB91_Orange]
 
+    colors2 = ['#78C850',  # Grass
+                        '#F08030',  # Fire
+                        '#6890F0',  # Water
+                        '#A8B820',  # Bug
+                        '#A8A878',  # Normal
+                        '#A040A0',  # Poison
+                        '#F8D030',  # Electric
+                        '#E0C068',  # Ground
+                        '#EE99AC',  # Fairy
+                        '#C03028',  # Fighting
+                        '#F85888',  # Psychic
+                        '#B8A038',  # Rock
+                        '#705898',  # Ghost
+                        '#7038F8',  # Dragon
+                        ]
+
     return colors.copy()
 
 

@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 from learners.CombWrapper import CombWrapper
 from tqdm import tqdm
 import matplotlib
+
 matplotlib.use("TkAgg")
+import seaborn as sns
 
 
 class SimulationHandler:
@@ -75,12 +77,12 @@ class SimulationHandler:
             self.non_stationary_env = True
 
         if self.is_unknown_graph:
-                #   **** MONTE CARLO EXECUTION BEFORE SIMULATION ****
-                users, products, campaigns, allocated_budget, prob_users, real_graphs = self.environment.get_core_entities()
-                self.real_graphs = copy.deepcopy(real_graphs)
-                estimated_fully_conn_graphs, estimated_2_neighs_graphs, true_2_neighs_graphs = self.environment.run_graph_estimate()
-                self.estimated_fully_conn_graphs = estimated_fully_conn_graphs
-                #   ************************************************
+            #   **** MONTE CARLO EXECUTION BEFORE SIMULATION ****
+            users, products, campaigns, allocated_budget, prob_users, real_graphs = self.environment.get_core_entities()
+            self.real_graphs = copy.deepcopy(real_graphs)
+            estimated_fully_conn_graphs, estimated_2_neighs_graphs, true_2_neighs_graphs = self.environment.run_graph_estimate()
+            self.estimated_fully_conn_graphs = estimated_fully_conn_graphs
+            #   ************************************************
 
     def __set_budgets_env(self, budgets):
         for i, b in enumerate(budgets):
@@ -280,7 +282,8 @@ class SimulationHandler:
                     axs[5].set_xlabel("days")
                     axs[5].set_ylabel("reward")
                     axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward")
-                    axs[5].plot(d, self.learners_rewards_per_day[idx_learner_to_observe], colors[-2],label = "bandit reward")
+                    axs[5].plot(d, self.learners_rewards_per_day[idx_learner_to_observe], colors[-2],
+                                label = "bandit reward")
                     axs[5].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                                   ncol = 2, mode = "expand", borderaxespad = 0.)
 
@@ -299,7 +302,8 @@ class SimulationHandler:
 
     # TODO A PLOT HANDLER SHOULD DO ALL THE WORK HERE !
 
-    def __plot_results(self):
+    def __plot_results(self, remove_splines = True, offset_axes = True, opacity = 0.5, sns_context = 'notebook',
+                       set_ticks = False, sns_style = 'white', enable_grid = True, hspace = 1, wspace = 0.5):
 
         clairvoyant_rewards_per_experiment_t1 = np.array(self.clairvoyant_rewards_per_experiment_t1)
 
@@ -346,8 +350,13 @@ class SimulationHandler:
 
         plt.close('all')
 
-        d = np.linspace(0, self.days, self.days)
+        sns.set_context(context = sns_context)
+        # sns.set_style(style = sns_style)
 
+        if set_ticks:
+            sns.set_style("ticks")
+
+        d = np.linspace(0, self.days, self.days)
 
         colors = util.get_colors()
 
@@ -355,7 +364,7 @@ class SimulationHandler:
 
         if len(self.learners) > 0:
             img, axss = plt.subplots(nrows = 2, ncols = 2, figsize = (13, 6))
-            plt.subplots_adjust(hspace = 0.8, top = 0.8)
+            plt.subplots_adjust(hspace = hspace, top = 0.8, wspace = wspace)
         else:
             img, axss = plt.subplots(nrows = 1, ncols = 2, figsize = (13, 6))
 
@@ -366,13 +375,13 @@ class SimulationHandler:
 
         if self.clairvoyant_type != 'both':
             axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
-                        label = "clairvoyant")
+                        label = "clairvoyant", alpha = opacity)
 
         else:
             axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
-                        label = "clairvoyant aggregated")
+                        label = "clairvoyant aggregated", alpha = opacity)
             axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0), colors[-2],
-                        label = "clairvoyant disaggregated")
+                        label = "clairvoyant disaggregated", alpha = opacity)
 
         axs[1].set_xlabel("days")
         axs[1].set_ylabel("cumulative reward")
@@ -380,22 +389,22 @@ class SimulationHandler:
         for learnerIdx in range(len(self.learners)):
             bandit_name = self.learners[learnerIdx].bandit_name
             axs[0].plot(d, np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0), colors_learners[learnerIdx],
-                        label = bandit_name)
+                        label = bandit_name, alpha = opacity)
 
         if self.clairvoyant_type != 'both':
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
-                        label = "clairvoyant")
+                        label = "clairvoyant", alpha = opacity)
 
         else:
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
-                        label = "clairvoyant aggregated")
+                        label = "clairvoyant aggregated", alpha = opacity)
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0)), colors[-2],
-                        label = "clairvoyant disaggegated")
+                        label = "clairvoyant disaggegated", alpha = opacity)
 
         for learnerIdx in range(len(self.learners)):
             bandit_name = self.learners[learnerIdx].bandit_name
             axs[1].plot(d, np.cumsum(np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)),
-                        colors_learners[learnerIdx], label = bandit_name)
+                        colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
 
         axs[0].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                       ncol = 2, mode = "expand", borderaxespad = 0.)
@@ -414,17 +423,27 @@ class SimulationHandler:
                 axs[2].plot(d, np.cumsum(
                         np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                                 axis = 0)),
-                            colors_learners[learnerIdx], label = bandit_name)
+                            colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
 
             for learnerIdx in range(len(self.learners)):
                 bandit_name = self.learners[learnerIdx].bandit_name
                 axs[3].plot(d,
                             np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
-                                    axis = 0), colors_learners[learnerIdx], label = bandit_name)
+                                    axis = 0), colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
 
             axs[2].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                           ncol = 2, mode = "expand", borderaxespad = 0.)
             axs[3].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                           ncol = 2, mode = "expand", borderaxespad = 0.)
 
+        if remove_splines:
+            if offset_axes:
+                for ax in axs:
+                    sns.despine(ax = ax, offset = 5, trim = False)
+            else:
+                sns.despine()
+
+        if enable_grid:
+            for ax in axs:
+                ax.grid(alpha = 0.2)
         plt.show()
