@@ -11,9 +11,8 @@ from SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-
     experiments = 2
-    days = 80
+    days = 20
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -24,6 +23,9 @@ if __name__ == '__main__':
     bool_n_noise = False
     printBasicDebug = False
     printKnapsackInfo = True
+    boost_start = True
+    boost_discount = 0.5  # boost discount wr to the highest reward
+    boost_bias = daily_budget / 5  # ensure a positive reward when all pull 0
 
     """ These parameters change a lot the performance of the CUSUM based bandits !! """
     kwargs_cusum = {"samplesForRefPoint": 10,
@@ -123,7 +125,10 @@ if __name__ == '__main__':
                                           print_knapsack_info = printKnapsackInfo,
                                           step_k = step_k,
                                           non_stationary_args = non_stationary_args,
-                                          clairvoyant_type = 'aggregated'
+                                          clairvoyant_type = 'aggregated',
+                                          boost_start = boost_start,
+                                          boost_bias = boost_bias,
+                                          boost_discount = boost_discount
                                           )
 
     simulationHandler.run_simulation()

@@ -30,6 +30,7 @@ class CombWrapper:
         # distribute arms uniformly in range (0, maxbudget)
         self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
         self.is_gaussian = is_gaussian
+
         # initialize one learner for each campaign
         mean = 350
         var = 90
@@ -48,8 +49,12 @@ class CombWrapper:
 
         if len(self.learners) > 0:
             self.bandit_name = self.learners[0].bandit_name
+
+            self.needs_boost = self.learners[0].needs_boost
+
         else:
             self.bandit_name = 'Bandit'
+            self.needs_boost = False
 
     def pull_super_arm(self) -> np.array:
         """ Return an array budget with the suggested allocation of budgets """

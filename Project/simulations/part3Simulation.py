@@ -5,7 +5,6 @@ from learners.CombWrapper import CombWrapper
 from SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
-
     # TODO ADD BOOST AND PRINT OF CONFIDENCE INTERVAL
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
@@ -20,6 +19,11 @@ if __name__ == '__main__':
     bool_n_noise = False
     printBasicDebug = False
     printKnapsackInfo = True
+
+    boost_start = True
+    boost_discount = 0.5  # boost discount wr to the highest reward
+    boost_bias = daily_budget / 5  # ensure a positive reward when all pull 0
+
     """ @@@@ ---------------- @@@@ """
 
     gpts_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget,
@@ -41,7 +45,10 @@ if __name__ == '__main__':
                                           print_basic_debug = printBasicDebug,
                                           print_knapsack_info = printKnapsackInfo,
                                           step_k = step_k,
-                                          clairvoyant_type = 'aggregated'
+                                          clairvoyant_type = 'aggregated',
+                                          boost_start = boost_start,
+                                          boost_bias = boost_bias,
+                                          boost_discount = boost_discount
                                           )
 
     simulationHandler.run_simulation()

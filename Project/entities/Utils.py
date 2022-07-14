@@ -1,12 +1,13 @@
 import random
 from random import randint
 from typing import Union
+
 import pandas as pd
 import numpy as np
 from random import uniform
 
-from LearnableGraph import LearnableGraph
-from Graph import Graph
+from entities.LearnableGraph import LearnableGraph
+from entities.Graph import Graph
 
 def get_probabilities(quantity, padding):
     """it return a random list of probabilities that sum to 1-padding"""
@@ -61,7 +62,7 @@ def get_ecommerce_graph(products = [], padding = 0.1):
 
 
 def __get_graph_specify_neighbours(products: list,
-                                   num_of_neighbours,
+                                   num_of_neighbours: Union[int, list],
                                    padding = None,
                                    weighted = True, known = True):
     graph = Graph() if known else LearnableGraph()

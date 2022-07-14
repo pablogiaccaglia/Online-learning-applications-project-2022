@@ -1,6 +1,6 @@
 import numpy as np
 
-from LearnableGraph import LearnableGraph
+from entities.LearnableGraph import LearnableGraph
 
 
 class User:

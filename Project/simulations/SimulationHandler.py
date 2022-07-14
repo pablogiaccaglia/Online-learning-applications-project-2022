@@ -27,10 +27,12 @@ class SimulationHandler:
                  print_basic_debug: bool,
                  print_knapsack_info: bool,
                  step_k: int,
-                 non_stationary_args = None,
-                 is_unknown_graph = False,
-                 clairvoyant_type = 'aggregated'):
-
+                 non_stationary_args: dict = None,
+                 is_unknown_graph: bool = False,
+                 clairvoyant_type: str = 'aggregated',
+                 boost_start: bool = False,
+                 boost_discount: float = 0.5,
+                 boost_bias: float = -1.0):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -55,6 +57,11 @@ class SimulationHandler:
         self.is_unknown_graph = is_unknown_graph
         self.clairvoyant_type = clairvoyant_type
         self.step_k = step_k
+
+        self.boost_start = boost_start
+        self.boost_discount = boost_discount
+        campaigns = 15 if self.clairvoyant_type == 'disaggregated' else 5  # to generalize !!
+        self.boost_bias = boost_bias if boost_bias >= 0.0 else self.daily_budget / campaigns
 
         if non_stationary_args and isinstance(non_stationary_args, dict):
             self.phase_size = non_stationary_args['phase_size']
@@ -85,7 +92,6 @@ class SimulationHandler:
 
         for experiment in range(self.experiments):
 
-            self.environment = Environment()
             self.super_arms = []
 
             for index, learner in enumerate(self.learners):
@@ -200,9 +206,22 @@ class SimulationHandler:
                                                                   self.bool_n_noise,
                                                                   self.bool_n_noise)
 
-                    learner.update_observations(super_arm, sim_obj["profit_campaign"][:-1])
-                    self.learners_rewards_per_day[learnerIdx].append(sim_obj["profit_campaign"][-1] - np.sum(super_arm))
+                    profit_env = sim_obj["profit_campaign"][-1]
 
+                    self.learners_rewards_per_day[learnerIdx].append(profit_env - np.sum(super_arm))
+                    profit_list = list(sim_obj["profit_campaign"][: -1])
+
+                    # BOOST DONE ONLY TO LEARNERS USING GP REGRESSOR
+                    if self.boost_start and learner.needs_boost and day <= 4:
+                        for i, s_arm in enumerate(super_arm):
+                            if s_arm == 0:
+                                # if a learner is pulling 0 give an high reward in an higher arm
+                                back_offset = np.random.randint(1, 4)
+                                forced_arm = np.sort(super_arm, axis = None)[-back_offset]  # take random high arm value
+                                profit_list[i] = np.max(profit_list) * self.boost_discount + self.boost_bias
+                                super_arm[i] = forced_arm
+
+                    learner.update_observations(super_arm, profit_list)
                     # solve comb problem for tomorrow
                     self.super_arms[learnerIdx] = learner.pull_super_arm()
 
@@ -216,12 +235,15 @@ class SimulationHandler:
 
         self.__plot_results()
 
+    # TODO A PLOT HANDLER SHOULD DO ALL THE WORK HERE !
+
     def __plot_results(self):
 
         clairvoyant_rewards_per_experiment_t1 = np.array(self.clairvoyant_rewards_per_experiment_t1)
 
         clairvoyant_rewards_per_experiment_t2 = np.array(self.clairvoyant_rewards_per_experiment_t2)
         learners_rewards_per_experiment = np.array(self.learners_rewards_per_experiment)
+        print(self.clairvoyant_rewards_per_experiment_t1)
 
         if self.clairvoyant_type != 'both':
             print(f"\n***** FINAL RESULT CLAIRVOYANT ALGORITHM {self.clairvoyant_type.upper()} *****")
@@ -265,12 +287,24 @@ class SimulationHandler:
 
         d = np.linspace(0, self.days, self.days)
 
-        colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
-        colors_learners = [colors.pop() for _ in range(len(self.learners) + 1)]
+        CB91_Blue = '#2CBDFE'
+        CB91_Green = '#47DBCD'
+        CB91_Pink = '#F3A0F2'
+        CB91_Purple = '#9D2EC5'
+        CB91_Violet = '#661D98'
+        CB91_Amber = '#F5B14C'
+        CB91_Red = '#fe2c54'
+        CB91_Orange = '#fe6d2c'
+
+        colors = [CB91_Blue, CB91_Amber, CB91_Purple, CB91_Green, CB91_Pink, CB91_Violet, CB91_Red, CB91_Orange]
+
+        colors_learners = [colors.pop() for _ in range(len(self.learners))]
 
         if len(self.learners) > 0:
             img, axss = plt.subplots(nrows = 2, ncols = 2, figsize = (13, 6))
+            plt.subplots_adjust(hspace = 0.8, top = 0.8)
         else:
             img, axss = plt.subplots(nrows = 1, ncols = 2, figsize = (13, 6))
 
@@ -278,8 +312,16 @@ class SimulationHandler:
 
         axs[0].set_xlabel("days")
         axs[0].set_ylabel("reward")
-        axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors_learners[-1],
-                    label = "clairvoyant")
+
+        if self.clairvoyant_type != 'both':
+            axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
+                        label = "clairvoyant")
+
+        else:
+            axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
+                        label = "clairvoyant aggregated")
+            axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0), colors[-2],
+                        label = "clairvoyant disaggregated")
 
         axs[1].set_xlabel("days")
         axs[1].set_ylabel("cumulative reward")
@@ -289,16 +331,25 @@ class SimulationHandler:
             axs[0].plot(d, np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0), colors_learners[learnerIdx],
                         label = bandit_name)
 
-        axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors_learners[-1],
-                    label = "clairvoyant")
+        if self.clairvoyant_type != 'both':
+            axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
+                        label = "clairvoyant")
+
+        else:
+            axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
+                        label = "clairvoyant aggregated")
+            axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0)), colors[-2],
+                        label = "clairvoyant disaggegated")
 
         for learnerIdx in range(len(self.learners)):
             bandit_name = self.learners[learnerIdx].bandit_name
             axs[1].plot(d, np.cumsum(np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)),
                         colors_learners[learnerIdx], label = bandit_name)
 
-        axs[0].legend(loc = "upper left")
-        axs[1].legend(loc = "upper left")
+        axs[0].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                      ncol = 2, mode = "expand", borderaxespad = 0.)
+        axs[1].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                      ncol = 2, mode = "expand", borderaxespad = 0.)
 
         if len(self.learners) > 0:
             axs[2].set_xlabel("days")
@@ -320,7 +371,9 @@ class SimulationHandler:
                             np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                                     axis = 0), colors_learners[learnerIdx], label = bandit_name)
 
-            axs[2].legend(loc = "upper left")
-            axs[3].legend(loc = "upper left")
+            axs[2].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                          ncol = 2, mode = "expand", borderaxespad = 0.)
+            axs[3].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                          ncol = 2, mode = "expand", borderaxespad = 0.)
 
         plt.show()

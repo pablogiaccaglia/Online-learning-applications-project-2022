@@ -1,4 +1,4 @@
-from Product import Product
+from entities.Product import Product
 import copy
 
 

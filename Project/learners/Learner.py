@@ -2,13 +2,14 @@ import numpy as np
 from CUSUM import CUSUM
 
 class Learner:
-    def __init__(self, n_arms, cusum_args = None):
+    def __init__(self, n_arms, cusum_args = None, needs_boost = False):
         self.n_arms = n_arms
         self.t = 0  # current round variable
         self.rewards_per_arm = [[] for _ in range(self.n_arms)]
         self.collected_rewards = np.array([])
         self.cd_enabled = False
         self.bandit_name = 'Bandit'
+        self.needs_boost = needs_boost
 
         if cusum_args:
             self.cd_enabled = True

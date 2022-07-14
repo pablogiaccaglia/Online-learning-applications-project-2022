@@ -5,7 +5,6 @@ from SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-
     experiments = 2
     days = 3
     N_user = 300  # reference for what alpha = 1 refers to
@@ -14,7 +13,7 @@ if __name__ == '__main__':
     step_k = 2
     n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
-    bool_alpha_noise = True
+    bool_alpha_noise = False
     bool_n_noise = False
     printBasicDebug = False
     printKnapsackInfo = True

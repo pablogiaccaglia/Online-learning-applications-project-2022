@@ -8,7 +8,7 @@ from Learner import Learner
 
 class SwGPUCB1_Learner(Learner):
     def __init__(self, arms, prior_mean, prior_sigma = 1, window_size = 3, beta = 50.):  # arms are the budgets (e.g 0,10,20...)
-        super().__init__(len(arms))
+        super().__init__(n_arms = len(arms), needs_boost = True)
         self.n_arms = len(arms)
         self.arms = arms
         self.means = np.ones(self.n_arms) * prior_mean
