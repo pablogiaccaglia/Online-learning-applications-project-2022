@@ -8,7 +8,7 @@ if __name__ == '__main__':
     # TODO ADD BOOST AND PRINT OF CONFIDENCE INTERVAL
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
-    days = 3
+    days = 100
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -48,7 +48,8 @@ if __name__ == '__main__':
                                           clairvoyant_type = 'aggregated',
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
-                                          boost_discount = boost_discount
+                                          boost_discount = boost_discount,
+                                          plot_regressor_progress = 'GP-TS'
                                           )
 
     simulationHandler.run_simulation()

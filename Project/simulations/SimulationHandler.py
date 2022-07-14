@@ -10,6 +10,9 @@ from entities import Utils as util
 import matplotlib.pyplot as plt
 from learners.CombWrapper import CombWrapper
 from tqdm import tqdm
+import matplotlib
+matplotlib.use("TkAgg")
+
 
 class SimulationHandler:
 
@@ -32,7 +35,8 @@ class SimulationHandler:
                  clairvoyant_type: str = 'aggregated',
                  boost_start: bool = False,
                  boost_discount: float = 0.5,
-                 boost_bias: float = -1.0):
+                 boost_bias: float = -1.0,
+                 plot_regressor_progress = None):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -57,6 +61,7 @@ class SimulationHandler:
         self.is_unknown_graph = is_unknown_graph
         self.clairvoyant_type = clairvoyant_type
         self.step_k = step_k
+        self.plot_regressor_progress = plot_regressor_progress
 
         self.boost_start = boost_start
         self.boost_discount = boost_discount
@@ -70,7 +75,6 @@ class SimulationHandler:
             self.non_stationary_env = True
 
         if self.is_unknown_graph:
-            if self.is_unknown_graph:
                 #   **** MONTE CARLO EXECUTION BEFORE SIMULATION ****
                 users, products, campaigns, allocated_budget, prob_users, real_graphs = self.environment.get_core_entities()
                 self.real_graphs = copy.deepcopy(real_graphs)
@@ -90,9 +94,23 @@ class SimulationHandler:
         if self.clairvoyant_type == 'both':
             self.clairvoyant_rewards_per_experiment_t2 = []
 
+        if self.plot_regressor_progress:
+            img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
+            axs = axss.flatten()
+            plt.subplots_adjust(hspace = 0.8, top = 0.8)
+
+            for idx, learner in enumerate(self.learners):
+                if learner.bandit_name == self.plot_regressor_progress:
+                    learner_to_observe = learner
+                    idx_learner_to_observe = idx
+                    break
+
+            colors = util.get_colors()
+
         for experiment in range(self.experiments):
 
-            util.clear_output()
+            if experiment > 0:
+                util.clear_output()
 
             if True:
                 print(f"\n***** EXPERIMENT {experiment + 1} *****")
@@ -162,8 +180,8 @@ class SimulationHandler:
                     self.clairvoyant_rewards_per_day_t2.append(reward)
 
                 else:
-                    rewards, available_budget = sim_obj["reward_k_agg"] if self.clairvoyant_type == 'disaggregated' else \
-                        sim_obj["reward_k_agg"]
+                    rewards, available_budget = sim_obj["reward_k_agg"] if self.clairvoyant_type == 'aggregated' else \
+                        sim_obj["reward_k"]
 
                     row_label_rewards, row_labels_dp_table, col_labels = util.table_metadata(len(products), 1,
                                                                                              available_budget)
@@ -198,6 +216,7 @@ class SimulationHandler:
                 # -----------------------------------------------------------------
 
                 if self.is_unknown_graph:
+                    print("ciao")
                     self.environment.set_user_graphs(
                             self.estimated_fully_conn_graphs)  # set real real_graphs for clavoyrant algorithm
 
@@ -229,6 +248,44 @@ class SimulationHandler:
                     learner.update_observations(super_arm, profit_list)
                     # solve comb problem for tomorrow
                     self.super_arms[learnerIdx] = learner.pull_super_arm()
+
+                if self.plot_regressor_progress:
+                    axs[5].cla()
+                if self.plot_regressor_progress:
+                    x = available_budget
+                    x2 = learner_to_observe.arms
+                    for i, rw in enumerate(rewards):
+                        axs[i].cla()
+                        axs[i].set_xlabel("budget")
+                        axs[i].set_ylabel("profit")
+                        axs[i].plot(x, rw, colors[-1], label = 'clairvoyant profit')
+                        # axs[i].plot(x2, comb_learner.last_knapsack_reward[i])
+                        mean, std = learner_to_observe.get_gp_data()
+                        # print(std[0])
+                        # print(mean[0][0])
+                        axs[i].plot(x2, mean[i], colors[i], label = 'estimated profit')
+                        axs[i].fill_between(
+                                np.array(x2).ravel(),
+                                mean[i] - 1.96 * std[i],
+                                mean[i] + 1.96 * std[i],
+                                alpha = 0.5,
+                                label = r"95% confidence interval",
+                        )
+
+                        axs[i].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                                      ncol = 2, mode = "expand", borderaxespad = 0.)
+
+                    d = np.linspace(0, len(self.clairvoyant_rewards_per_day_t1),
+                                    len(self.clairvoyant_rewards_per_day_t1))
+                    axs[5].set_xlabel("days")
+                    axs[5].set_ylabel("reward")
+                    axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward")
+                    axs[5].plot(d, self.learners_rewards_per_day[idx_learner_to_observe], colors[-2],label = "bandit reward")
+                    axs[5].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                                  ncol = 2, mode = "expand", borderaxespad = 0.)
+
+                    # axs[5].plot(d, rewards_disaggregated)
+                    plt.pause(0.02)  # no need for this,
 
             self.clairvoyant_rewards_per_experiment_t1.append(self.clairvoyant_rewards_per_day_t1)
 
@@ -291,18 +348,8 @@ class SimulationHandler:
 
         d = np.linspace(0, self.days, self.days)
 
-        # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
-        CB91_Blue = '#2CBDFE'
-        CB91_Green = '#47DBCD'
-        CB91_Pink = '#F3A0F2'
-        CB91_Purple = '#9D2EC5'
-        CB91_Violet = '#661D98'
-        CB91_Amber = '#F5B14C'
-        CB91_Red = '#fe2c54'
-        CB91_Orange = '#fe6d2c'
-
-        colors = [CB91_Blue, CB91_Amber, CB91_Purple, CB91_Green, CB91_Pink, CB91_Violet, CB91_Red, CB91_Orange]
+        colors = util.get_colors()
 
         colors_learners = [colors.pop() for _ in range(len(self.learners))]
 

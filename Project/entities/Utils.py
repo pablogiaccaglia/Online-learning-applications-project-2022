@@ -165,3 +165,21 @@ def clear_output(wait = True, keep_scroll_back = False):
         os.system('cls' if os.name == 'nt' else "printf '\033c'")
 
 
+
+def get_colors():
+    # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+    CB91_Blue = '#2CBDFE'
+    CB91_Green = '#47DBCD'
+    CB91_Pink = '#F3A0F2'
+    CB91_Purple = '#9D2EC5'
+    CB91_Violet = '#661D98'
+    CB91_Amber = '#F5B14C'
+    CB91_Red = '#fe2c54'
+    CB91_Orange = '#fe6d2c'
+
+    colors = [CB91_Blue, CB91_Amber, CB91_Purple, CB91_Green, CB91_Pink, CB91_Violet, CB91_Red, CB91_Orange]
+
+    return colors.copy()
+
+

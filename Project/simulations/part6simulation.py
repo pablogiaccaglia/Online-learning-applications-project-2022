@@ -128,7 +128,8 @@ if __name__ == '__main__':
                                           clairvoyant_type = 'aggregated',
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
-                                          boost_discount = boost_discount
+                                          boost_discount = boost_discount,
+                                          plot_regressor_progress = 'SW-GP-UCB1'
                                           )
 
     simulationHandler.run_simulation()
