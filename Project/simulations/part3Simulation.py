@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
-    days = 30
+    days = 300
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5

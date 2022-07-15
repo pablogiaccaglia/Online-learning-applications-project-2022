@@ -13,7 +13,7 @@ if __name__ == '__main__':
     step_k = 2
     n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
-    bool_alpha_noise = False
+    bool_alpha_noise = True
     bool_n_noise = False
     printBasicDebug = False
     printKnapsackInfo = True

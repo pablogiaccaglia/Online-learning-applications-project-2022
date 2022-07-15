@@ -1,4 +1,5 @@
 import copy
+import json
 from typing import Type
 from typing import Union
 from Environment import Environment
@@ -38,7 +39,8 @@ class SimulationHandler:
                  boost_start: bool = False,
                  boost_discount: float = 0.5,
                  boost_bias: float = -1.0,
-                 plot_regressor_progress = None):
+                 plot_regressor_progress = None,
+                 save_results_to_file = True):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -64,10 +66,11 @@ class SimulationHandler:
         self.clairvoyant_type = clairvoyant_type
         self.step_k = step_k
         self.plot_regressor_progress = plot_regressor_progress
+        self.save_results_to_file = save_results_to_file
 
         self.boost_start = boost_start
         self.boost_discount = boost_discount
-        campaigns = 15 if self.clairvoyant_type == 'disaggregated' else 5  # to generalize !!
+        campaigns = 15 if self.clairvoyant_type == 'disaggregated' else 5  # TODO to generalize !!
         self.boost_bias = boost_bias if boost_bias >= 0.0 else self.daily_budget / campaigns
 
         if non_stationary_args and isinstance(non_stationary_args, dict):
@@ -290,7 +293,8 @@ class SimulationHandler:
                                     len(self.clairvoyant_rewards_per_day_t1))
                     axs[5].set_xlabel("days")
                     axs[5].set_ylabel("reward")
-                    axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward", alpha = 0.5)
+                    axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward",
+                                alpha = 0.5)
                     axs[5].plot(d, self.learners_rewards_per_day[idx_learner_to_observe], colors[-2],
                                 label = "bandit reward", alpha = 0.5)
                     axs[5].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
@@ -323,43 +327,161 @@ class SimulationHandler:
         clairvoyant_rewards_per_experiment_t2 = np.array(self.clairvoyant_rewards_per_experiment_t2)
         learners_rewards_per_experiment = np.array(self.learners_rewards_per_experiment)
 
+        if self.save_results_to_file:
+            results = {}
+
+            if self.clairvoyant_type != 'both':
+                key = 'clairvoyant' + self.clairvoyant_type.capitalize()
+                results[key] = {}
+            else:
+                results['clairvoyantAggregated'] = {}
+                results['clairvoyantDisaggregated'] = {}
+
+            for learner in self.learners:
+                results[learner.bandit_name] = {}
+
+        avgTotalProfit = 'avgTotalProfit'
+        avgTotalProfitStd = 'avgTotalProfitStd'
+        avgProfitPerDay = 'avgProfitPerDay'
+        avgProfitPerDayStd = 'avgProfitPerDayStd '
+        avgTotalRegret = 'avgTotalRegret'
+        avgTotalRegretStd = 'avgTotalRegretStd'
+        avgRegretPerDay = 'avgRegretPerDay'
+        avgRegretPerDayStd = 'avgRegretPerDayStd'
+
+        varsDict = {}
+
+        varsDict[util.retrieve_name(avgTotalProfit)] = 0.0
+        varsDict[util.retrieve_name(avgTotalProfitStd)] = 0.0
+        varsDict[util.retrieve_name(avgProfitPerDay)] = 0.0
+        varsDict[util.retrieve_name(avgProfitPerDayStd)] = 0.0
+        varsDict[util.retrieve_name(avgTotalRegret)] = 0.0
+        varsDict[util.retrieve_name(avgTotalRegretStd)] = 0.0
+        varsDict[util.retrieve_name(avgRegretPerDay)] = 0.0
+        varsDict[util.retrieve_name(avgRegretPerDayStd)] = 0.0
+
         if self.clairvoyant_type != 'both':
+            varsDict[util.retrieve_name(avgTotalProfit)] = float(
+                np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+
+            varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
+                np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+
+            varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t1))
+            varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t1))
+
+            if self.save_results_to_file:
+                key = 'clairvoyant' + self.clairvoyant_type.capitalize()
+                for v in varsDict:
+                    results[key][v] = varsDict[v]
+
             print(f"\n***** FINAL RESULT CLAIRVOYANT ALGORITHM {self.clairvoyant_type.upper()} *****")
             print(f"days simulated: {self.days}")
+            print(f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
             print(
-                    f"average clairvoyant total profit:\t {float(np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1))):.4f}€")
-            print(f"average clairvoyant profit per day:\t {float(np.mean(clairvoyant_rewards_per_experiment_t1)):.4f}€")
-            print(f"average standard deviation:\t {float(np.std(clairvoyant_rewards_per_experiment_t1)):.4f}€")
+                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+            print("----------------------------")
+            print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)]:.4f}€")
+            print(
+                f"average clairvoyant profit per day standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
 
         else:
 
+            varsDict[util.retrieve_name(avgTotalProfit)] = float(
+                np.mean(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
+            varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
+                np.std(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
+            varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t2))
+            varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t2))
+
+            if self.save_results_to_file:
+                key = 'clairvoyantDisaggregated'
+                for v in varsDict:
+                    results[key][v] = varsDict[v]
+
             print(f"\n***** FINAL RESULT CLAIRVOYANT ALGORITHM DISAGGREGATED *****")
             print(f"days simulated: {self.days}")
+            print(f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
             print(
-                    f"average clairvoyant total profit:\t {float(np.mean(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1))):.4f}€")
-            print(f"average clairvoyant profit per day:\t {float(np.mean(clairvoyant_rewards_per_experiment_t2)):.4f}€")
-            print(f"average standard deviation:\t {float(np.std(clairvoyant_rewards_per_experiment_t2)):.4f}€")
+                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+            print("----------------------------")
+            print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)]:.4f}€")
+            print(f"average standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
+
+            varsDict[util.retrieve_name(avgTotalProfit)] = float(
+                np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+            varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
+                np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+            varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t1))
+            varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t1))
+
+            if self.save_results_to_file:
+                key = 'clairvoyantAggregated'
+                for v in varsDict:
+                    results[key][v] = varsDict[v]
 
             print(f"\n***** FINAL RESULT CLAIRVOYANT ALGORITHM AGGREGATED *****")
             print(f"days simulated: {self.days}")
             print(
-                    f"average clairvoyant total profit:\t {float(np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1))):.4f}€")
-            print(f"average clairvoyant profit per day:\t {float(np.mean(clairvoyant_rewards_per_experiment_t1)):.4f}€")
-            print(f"average standard deviation:\t {float(np.std(clairvoyant_rewards_per_experiment_t1)):.4f}€")
+                    f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
+            print(
+                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+            print("----------------------------")
+            print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)] :.4f}€")
+            print(f"average standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
 
         for learnerIdx, learner in enumerate(self.learners):
+
+            varsDict[util.retrieve_name(avgTotalProfit)] = float(
+                np.mean(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+            varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
+                np.std(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+            varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(learners_rewards_per_experiment[learnerIdx]))
+            varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(
+                np.std(learners_rewards_per_experiment[learnerIdx]))
+            varsDict[util.retrieve_name(avgTotalRegret)] = float(np.mean(
+                np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
+            varsDict[util.retrieve_name(avgTotalRegretStd)] = float(np.std(
+                np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
+            varsDict[util.retrieve_name(avgRegretPerDay)] = float(
+                np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
+            varsDict[util.retrieve_name(avgRegretPerDayStd)] = float(
+                np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
+
+            if self.save_results_to_file:
+                key = learner.bandit_name
+                for v in varsDict:
+                    results[key][v] = varsDict[v]
+
             print(f"\n***** FINAL RESULT LEARNER {learner.bandit_name} *****")
+
             print(
-                    f"Learner average total profit:\t {float(np.mean(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1))):.4f}€")
+                    f"average total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
+            print(
+                    f"average total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+
+            print("----------------------------")
+            print(f"average profit per day :\t {varsDict[util.retrieve_name(avgProfitPerDay)]:.4f}€")
+            print(
+                    f"average profit per day standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
+
             print("----------------------------")
             print(
-                    f"Learner average profit per day :\t {float(np.mean(learners_rewards_per_experiment[learnerIdx])):.4f}€")
-            print(f"average standard deviation:\t {float(np.std(learners_rewards_per_experiment[learnerIdx])):.4f}€")
+                    f"average total regret\t {varsDict[util.retrieve_name(avgTotalRegret)]:.4f}€")
             print(
-                    f"average regret\t {float(np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx])):.4f}€")
-            print(
-                    f"average standard deviation:\t {float(np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx])):.4f}€")
+                    f"average total regret standard deviation:\t {varsDict[util.retrieve_name(avgTotalRegretStd)]:.4f}€")
             print()
+
+            print("----------------------------")
+            print(
+                    f"average regret per day\t {varsDict[util.retrieve_name(avgRegretPerDay)]:.4f}€")
+            print(
+                    f"average regret per day standard deviation:\t {varsDict[util.retrieve_name(avgRegretPerDayStd)]:.4f}€")
+            print()
+
+        if self.save_results_to_file:
+            with open('results.json', 'w') as f:
+                json.dump(results, f, ensure_ascii=False, indent=4)
 
         plt.close('all')
 

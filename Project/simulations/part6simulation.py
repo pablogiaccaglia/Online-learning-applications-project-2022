@@ -12,7 +12,7 @@ from SimulationHandler import SimulationHandler
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
-    days = 20
+    days = 2
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -102,7 +102,6 @@ if __name__ == '__main__':
     for phase in range(n_phases):
         probs = abs(np.random.normal(size = 3))
         probs /= probs.sum()
-
         prob_users_phases[phase] = list(probs)
 
     non_stationary_args = {
