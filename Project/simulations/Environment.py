@@ -173,7 +173,7 @@ class Environment:
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
         K.solve()
         arg_max = np.argmax(K.get_output()[0][-1])
-        # alloc = K.get_output()[1][-1][arg_max]
+        alloc_agg = np.array(K.get_output()[1][-1][arg_max])[1:]
         # b_knap = budget_array_from_k_alloc_4(alloc)  # budgets vector for contextualized env
         reward = K.get_output()[0][-1][arg_max]
         reward_k_agg = reward
@@ -184,7 +184,7 @@ class Environment:
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
         K.solve()
         arg_max = np.argmax(K.get_output()[0][-1])
-        # alloc = K.get_output()[1][-1][arg_max]
+        alloc_disagg = np.array(K.get_output()[1][-1][arg_max])[1:]
         # b_knap = budget_array_from_k_alloc_4(alloc)  # budgets vector for contextualized env
         reward = K.get_output()[0][-1][arg_max]
         reward_k_disagg = reward
@@ -196,6 +196,8 @@ class Environment:
             "rewards_agg": agg_ordered_rewards,
             "rewards_disagg": rewards,
             "reward_k_agg": reward_k_agg,
+            "alloc_agg": (alloc_agg, np.sum(alloc_agg)),
+            "alloc_disagg": (alloc_disagg, np.sum(alloc_disagg))
         }
 
     def replicate_last_day(self, super_arm, n_users, reference_price, alpha_noise=False, n_noise=False, contexts=None):
@@ -317,10 +319,7 @@ class Environment:
         available_budget = [step_size * (i + 1) for i in range(n_budgets)]
         n_classes = 4
         n_campaigns = len(self.products)
-        prob_users = [self.prob_users[0] * 0.5,
-                      self.prob_users[0] * 0.5,
-                      self.prob_users[1],
-                      self.prob_users[2]]
+        prob_users = self.all_prob_users
         users = [self.users[0], self.users[0], self.users[1], self.users[2]]
 
         rewards = []
@@ -345,69 +344,6 @@ class Environment:
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget
-
-    def __profit_per_user(self, n_users, reference_price):
-        """ Alert -> It scales the budget by user probability: use it for aggregated case """
-        noise_alpha = self.noise_alpha
-        exp_number_noise = self.exp_number_noise
-
-        old_budget = self.allocated_budget  # save old budget
-        profit_u = [0, 0, 0]
-
-        for i, cmp in enumerate(self.campaigns):
-            for j, u in enumerate(self.users):
-                # cumulative expected profit for user j over all campaigns
-                p_u = self.prob_users[j]  # user j probability
-                self.campaigns[i].change_budget(old_budget[i] * p_u)  # allocated scaled budget by user probability
-                noise_a = noise_alpha[j][i]  # noise over (i,j)
-                alpha_f_res = cmp.get_alpha_i(u.alpha_functions[i])  # effect of budget over campaign (alpha function)
-                exp_profit = u.expected_profit(exp_number_noise[j])[
-                    i]  # expected profit of user j over graph + noise n effect
-
-                profit_u[j] += p_u * noise_a * alpha_f_res * exp_profit
-
-        # convert the pure number in euro
-        profit_u1_euro = profit_u[0] * n_users * reference_price
-        profit_u2_euro = profit_u[1] * n_users * reference_price
-        profit_u3_euro = profit_u[2] * n_users * reference_price
-        daily_profit_euro = profit_u1_euro + profit_u2_euro + profit_u3_euro
-
-        self.__set_campaign_budgets(old_budget)  # restore old budget
-
-        return profit_u1_euro, profit_u2_euro, profit_u3_euro, daily_profit_euro
-
-    def __profit_per_campaign(self, n_users, reference_price):
-        """ Alert -> It scales the budget by user probability: use it for aggregated case """
-        noise_alpha = self.noise_alpha
-        exp_number_noise = self.exp_number_noise
-
-        old_budget = self.allocated_budget  # save old budget
-        campaign_profits = []
-
-        for i, cmp in enumerate(self.campaigns):
-            tmp_profit = 0
-            for j, u in enumerate(self.users):
-                # cumulative expected profit for user j over all campaigns
-                p_u = self.prob_users[j]  # user j probability
-                self.campaigns[i].change_budget(old_budget[i] * p_u)  # allocated scaled budget by user probability
-                noise_a = noise_alpha[j][i]  # noise over (i,j)
-                alpha_f_res = cmp.get_alpha_i(u.alpha_functions[i])  # effect of budget over campaign (alpha function)
-                exp_profit = u.expected_profit(exp_number_noise[j])[
-                    i]  # expected profit of user j over graph + noise n effect
-
-                tmp_profit += p_u * noise_a * alpha_f_res * exp_profit
-
-            campaign_profits.append(tmp_profit)
-
-        # convert the pure number in euro
-        for i, cmp_profit in enumerate(campaign_profits):
-            euro_val = cmp_profit * n_users * reference_price
-            campaign_profits[i] = euro_val
-
-        campaign_profits.append(np.sum(campaign_profits))
-        self.__set_campaign_budgets(old_budget)  # restore old budget
-
-        return tuple(campaign_profits)
 
     def __profit_campaign_per_user(self, user_index, n_users, reference_price):
         """ Not scaled user probability profit for a campaign with forced budget of caller"""
