@@ -3,7 +3,8 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Learner import Learner
+
+from learners.Learner import Learner
 
 
 class SwGPUCB1_Learner(Learner):

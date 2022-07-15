@@ -20,18 +20,17 @@ class CombWrapper:
                  n_campaigns,
                  n_arms,
                  max_budget,
-                 arm_distance = None,
-                 is_ucb = False,
-                 is_gaussian = False,
-                 kwargs = None):  # arms are the budgets (e.g 0,10,20...)
+                 arm_distance=None,
+                 is_ucb=False,
+                 is_gaussian=False,
+                 kwargs=None):  # arms are the budgets (e.g 0,10,20...)
 
         self.learners = []
         self.max_b = max_budget
         self.last_knapsack_reward = []
         self.is_ucb = is_ucb
-        # distribute arms uniformly in range (0, maxbudget)
 
-        if not arm_distance:
+        if arm_distance is None:
             arm_distance = max_budget / n_arms
 
         self.arm_distance = arm_distance
@@ -39,7 +38,7 @@ class CombWrapper:
         self.is_gaussian = is_gaussian
 
         # this init does not affect GP
-        mean = 350
+        mean = 0
         var = 90
         for _ in range(n_campaigns):
 
@@ -81,14 +80,10 @@ class CombWrapper:
         padding_budgets = np.arange(start, stop, step)
         budgets = np.concatenate([budgets, padding_budgets])
 
-        padding_reward = np.zeros((len(self.learners), len(padding_budgets)))
-        for i_r, r in enumerate(rewards):
-            r_last = r[-1]
-            for j, _ in enumerate(padding_reward[i_r]):
-                padding_reward[i_r][j] = r_last - step * j
-        rewards = np.concatenate([np.array(rewards), padding_reward], axis = 1)
+        padding_reward = -1 * np.ones((len(self.learners), len(padding_budgets)))
+        rewards = np.concatenate([np.array(rewards), padding_reward], axis=1)
 
-        k = Knapsack(rewards = np.array(rewards), budgets = budgets)
+        k = Knapsack(rewards=np.array(rewards), budgets=budgets)
         k.solve()
 
         if self.is_ucb:
@@ -103,7 +98,7 @@ class CombWrapper:
             cumulative_ucbs = np.zeros(len(self.arms))
 
             for idxAlloc, alloc in enumerate(allocs):
-                indexes = self.__indexes_super_arm(super_arm = alloc)  # [0, 3, 5 , 10]
+                indexes = self.__indexes_super_arm(super_arm=alloc)  # [0, 3, 5 , 10]
                 for learner, indexArm in zip(self.learners, indexes):
                     learner.update_ucbs()
                     cumulative_ucbs[idxAlloc] += learner.ucbs[indexArm]
@@ -123,13 +118,13 @@ class CombWrapper:
             # knapsack output [c11,c12,c13,c21,c22,c23] -> [c11,c21, c12, c22. c13.c23]
             group_size = int(len(super_arms) / 5)
             a = np.array(super_arms).reshape((5, group_size))  # reshape in cluster of 3 res x 5 camp
-            tmp = np.reshape(a, len(super_arms), order = 'F')  # reorder per user
+            tmp = np.reshape(a, len(super_arms), order='F')  # reorder per user
             return tmp  # [ctx1|ctx2|ctx3|ctx4]  budget output in context execution
 
         # return best allocation possible after combinatorial optimization problem
         return super_arms
 
-    def update_observations(self, super_arm, env_rewards, show_warning = False):
+    def update_observations(self, super_arm, env_rewards, show_warning=False):
         index_arm = self.__indexes_super_arm(super_arm)
         not_pulled = 0
         for i, learner in enumerate(self.learners):

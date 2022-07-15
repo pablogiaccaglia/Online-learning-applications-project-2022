@@ -1,8 +1,8 @@
-from Environment import Environment
-import numpy as np
-from GPTS_Learner import GPTS_Learner
 from learners.CombWrapper import CombWrapper
-from SimulationHandler import SimulationHandler
+from learners.GPTS_Learner import GPTS_Learner
+from simulations.Environment import Environment
+from simulations.SimulationHandler import SimulationHandler
+import numpy as np
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """

@@ -1,58 +1,60 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from entities import Utils as util
+
 from entities.Campaign import Campaign
-from OfflineWeightsLearner import OfflineWeightsLearner
-from OnlineWeightsLearner import OnlineWeightsLearner
 from entities.Product import Product
+import entities.Utils as util
 from entities.User import User
+from knapsack.Knapsack import Knapsack
+from learners.OfflineWeightsLearner import OfflineWeightsLearner
+from learners.OnlineWeightsLearner import OnlineWeightsLearner
 
 
 class Environment:
     def __init__(self):
         # print("init env")
         """ Products SETUP """
-        prod1 = Product(1, 0.50, secondary_list = [2, 3])
-        prod2 = Product(2, 0.625, secondary_list = [3, 4])
-        prod3 = Product(3, 0.75, secondary_list = [1, 5])
-        prod4 = Product(4, 0.875, secondary_list = [2, 5])
-        prod5 = Product(5, 1.00, secondary_list = [1, 4])
+        prod1 = Product(1, 0.50, secondary_list=[2, 3])
+        prod2 = Product(2, 0.625, secondary_list=[3, 4])
+        prod3 = Product(3, 0.75, secondary_list=[1, 5])
+        prod4 = Product(4, 0.875, secondary_list=[2, 5])
+        prod5 = Product(5, 1.00, secondary_list=[1, 4])
         self.products = [prod1, prod2, prod3, prod4, prod5]
         """ Alpha functions SETUP """
         mv = 1  # don't change it,  max alpha function value
         act = 23  # activation
         alpha_usr1 = [
-            util.new_alpha_function(saturation_speed = 0.025, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.06, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.03, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.04, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.04, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.06, max_value = mv, activation = act)
+            util.new_alpha_function(saturation_speed=0.025, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.06, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.03, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.04, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.04, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.06, max_value=mv, activation=act)
         ]
         act = 30  # activation
         alpha_usr2 = [
-            util.new_alpha_function(saturation_speed = 0.18, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.16, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.23, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.25, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.21, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.19, max_value = mv, activation = act)
+            util.new_alpha_function(saturation_speed=0.18, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.16, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.23, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.25, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.21, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.19, max_value=mv, activation=act)
         ]
         act = 15  # activation
         alpha_usr3 = [
-            util.new_alpha_function(saturation_speed = 0.08, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.12, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.07, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.10, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.07, max_value = mv, activation = act),
-            util.new_alpha_function(saturation_speed = 0.09, max_value = mv, activation = act)
+            util.new_alpha_function(saturation_speed=0.08, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.12, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.07, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.10, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.07, max_value=mv, activation=act),
+            util.new_alpha_function(saturation_speed=0.09, max_value=mv, activation=act)
         ]
 
         # plot alpha functions
         do_plot = False
         if do_plot:  # show or not alpha plot
             test_alpha = alpha_usr3
-            img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
+            img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
             axs = axss.flatten()
             for i in range(6):
                 x = np.linspace(0, 100, 100)
@@ -82,59 +84,57 @@ class Environment:
 
         self.graphs = [graph1, graph2, graph3]
 
-        user1 = User(id = 1,
-                     reservation_prices = res_prices_1,
-                     lmbda = 0.8,
-                     alpha_functions = alpha_usr1,
-                     exp_number_purchase = exp_number_purchase_1,
-                     weighted_graph = graph1,
+        user1 = User(id=1,
+                     reservation_prices=res_prices_1,
+                     lmbda=0.8,
+                     alpha_functions=alpha_usr1,
+                     exp_number_purchase=exp_number_purchase_1,
+                     weighted_graph=graph1,
                      )
 
-        user2 = User(id = 2,
-                     reservation_prices = res_prices_2,
-                     lmbda = 0.5,
-                     alpha_functions = alpha_usr2,
-                     exp_number_purchase = exp_number_purchase_2,
-                     weighted_graph = graph2,
+        user2 = User(id=2,
+                     reservation_prices=res_prices_2,
+                     lmbda=0.5,
+                     alpha_functions=alpha_usr2,
+                     exp_number_purchase=exp_number_purchase_2,
+                     weighted_graph=graph2,
                      )
 
-        user3 = User(id = 3,
-                     reservation_prices = res_prices_3,
-                     lmbda = 0.65,
-                     alpha_functions = alpha_usr3,
-                     exp_number_purchase = exp_number_purchase_3,
-                     weighted_graph = graph3,
+        user3 = User(id=3,
+                     reservation_prices=res_prices_3,
+                     lmbda=0.65,
+                     alpha_functions=alpha_usr3,
+                     exp_number_purchase=exp_number_purchase_3,
+                     weighted_graph=graph3,
                      )
 
         """ Campaigns SETUP """
         alpha_i_max = [0.4, 0.4, 0.2, 0.3, 0.2]
         self.allocated_budget = [40, 40, 40, 40, 40]  # range 0-100
 
-        cmp1 = Campaign(1, self.allocated_budget[0], alpha_i_max = alpha_i_max[0])
-        cmp2 = Campaign(2, self.allocated_budget[1], alpha_i_max = alpha_i_max[1])
-        cmp3 = Campaign(3, self.allocated_budget[2], alpha_i_max = alpha_i_max[2])
-        cmp4 = Campaign(4, self.allocated_budget[3], alpha_i_max = alpha_i_max[3])
-        cmp5 = Campaign(5, self.allocated_budget[4], alpha_i_max = alpha_i_max[4])
+        cmp1 = Campaign(1, self.allocated_budget[0], alpha_i_max=alpha_i_max[0])
+        cmp2 = Campaign(2, self.allocated_budget[1], alpha_i_max=alpha_i_max[1])
+        cmp3 = Campaign(3, self.allocated_budget[2], alpha_i_max=alpha_i_max[2])
+        cmp4 = Campaign(4, self.allocated_budget[3], alpha_i_max=alpha_i_max[3])
+        cmp5 = Campaign(5, self.allocated_budget[4], alpha_i_max=alpha_i_max[4])
 
         """ Extended campaign setup """
-        # TODO develop ideal situation when n_user * n_product campaigns are available
-        # edit: abort this passage since the disaggregated knspsack is performing worse
         self.campaigns = [cmp1, cmp2, cmp3, cmp4, cmp5]
         self.competitor_alpha = np.sum(alpha_i_max)
         self.users = [user1, user2, user3]
         self.prob_users = [prob_user1, prob_user2, prob_user3]
+        self.all_prob_users = [prob_user1 * 0.5, prob_user1 * 0.5, prob_user2, prob_user3]
         self.noise_alpha = []
         self.exp_number_noise = []
 
-    def play_one_day(self, n_users, reference_price, daily_budget, step_k = 2, alpha_noise = False, n_noise = False):
+    def play_one_day(self, n_users, reference_price, daily_budget, step_k=2, alpha_noise=False, n_noise=False):
         # generate noisy contractions matrix for alpha functions and exp number of purchase
-
         if alpha_noise:
             self.noise_alpha = util.noise_matrix_alpha()
         else:
             self.noise_alpha = util.no_noise_matrix()
         if n_noise:
-            self.exp_number_noise = util.noise_matrix_alpha(max_reduction = 0.25, max_global_influence = 0)
+            self.exp_number_noise = util.noise_matrix_alpha(max_reduction=0.25, max_global_influence=0)
         else:
             self.exp_number_noise = util.no_noise_matrix()
 
@@ -143,39 +143,62 @@ class Environment:
 
         n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
 
-        # TODO AVOID COMPUTING ALL THESE FUNCTIONS EVERY TIME -> SLOWS COMPUTATION!
-        # knapsack disaggregated reward computation
-        rewards_k, avail_budgets = self.__rewards_knapsack(n_users,
-                                                           reference_price,
-                                                           noise_alpha,
-                                                           exp_number_noise = exp_number_noise,
-                                                           step_size = step_k,
-                                                           n_budgets = n_budget_k)
-        # knapsack aggregated reward computation
-        rewards_k_agg, avail_budgets_agg = self.__rewards_knapsack_aggregated(n_users,
-                                                                              reference_price,
-                                                                              noise_alpha,
-                                                                              exp_number_noise = exp_number_noise,
-                                                                              step_size = step_k,
-                                                                              n_budgets = n_budget_k)
         # knapsack disaggregated for 4 users
-        rewards_k_4, avail_budgets_4 = self.__rewards_knapsack_4_user(n_users,
-                                                                      reference_price,
-                                                                      noise_alpha,
-                                                                      exp_number_noise = exp_number_noise,
-                                                                      step_size = step_k,
-                                                                      n_budgets = n_budget_k)
+        rewards, avail_budgets = self.__rewards_knapsack_4_user(n_users,
+                                                                reference_price,
+                                                                noise_alpha,
+                                                                exp_number_noise=exp_number_noise,
+                                                                step_size=step_k,
+                                                                n_budgets=n_budget_k)
+
+        # AGGREGATED
+        contexts = [[1, 1, 1, 1]]
+        ordered_rewards = []
+        for offset in [0, 1, 2, 3]:  # order rewards from groups by users to groups by campaign
+            for i_campaign in range(5):
+                ordered_rewards.append(rewards[offset + 4 * i_campaign])
+        ordered_rewards = np.array_split(ordered_rewards, 4)
+        agg_ordered_rewards = []
+        for _mask in contexts:  # aggregate knapsack rewards according to actual context
+            tmp = np.array(ordered_rewards[0]) * 0
+            bool_discount_cost = False
+            for i_bit, bit in enumerate(_mask):
+                if bit == 1:
+                    tmp += ordered_rewards[i_bit]
+            agg_ordered_rewards.append(tmp)
+        agg_ordered_rewards = np.array(agg_ordered_rewards[0])
+
+        row_label_rewards, row_labels_dp_table, col_labels = util.table_metadata(5, 1, avail_budgets)
+        K = Knapsack(rewards=agg_ordered_rewards, budgets=np.array(avail_budgets))
+        K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
+        K.solve()
+        arg_max = np.argmax(K.get_output()[0][-1])
+        # alloc = K.get_output()[1][-1][arg_max]
+        # b_knap = budget_array_from_k_alloc_4(alloc)  # budgets vector for contextualized env
+        reward = K.get_output()[0][-1][arg_max]
+        reward_k_agg = reward
+
+        # DISAGGREGATE
+        row_label_rewards, row_labels_dp_table, col_labels = util.table_metadata(5, 4, avail_budgets)
+        K = Knapsack(rewards=rewards, budgets=np.array(avail_budgets))
+        K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
+        K.solve()
+        arg_max = np.argmax(K.get_output()[0][-1])
+        # alloc = K.get_output()[1][-1][arg_max]
+        # b_knap = budget_array_from_k_alloc_4(alloc)  # budgets vector for contextualized env
+        reward = K.get_output()[0][-1][arg_max]
+        reward_k_disagg = reward
 
         return {
-            "profit":          self.__profit_per_user(n_users, reference_price),
-            "noise":           (noise_alpha, exp_number_noise),
-            "reward_k":        (rewards_k, avail_budgets),
-            "reward_k_4":      (rewards_k_4, avail_budgets_4),
-            "reward_k_agg":    (rewards_k_agg, avail_budgets_agg),
-            "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
+            "k_budgets": avail_budgets,
+            "noise": (noise_alpha, exp_number_noise),
+            "reward_k_disagg": reward_k_disagg,
+            "rewards_agg": agg_ordered_rewards,
+            "rewards_disagg": rewards,
+            "reward_k_agg": reward_k_agg,
         }
 
-    def replicate_last_day(self, n_users, reference_price, alpha_noise = False, n_noise = False):
+    def replicate_last_day(self, super_arm, n_users, reference_price, alpha_noise=False, n_noise=False, contexts=None):
         if alpha_noise:
             noise_alpha = self.noise_alpha
         else:
@@ -185,10 +208,23 @@ class Environment:
         else:
             exp_number_noise = util.no_noise_matrix()
 
+        if contexts is None:
+            ctx = [[1, 1, 1, 1]]
+        else:
+            ctx = contexts
+        # adapt budget from super arm to the 4 class of users
+        budgets_array = self.budget_array_from_superarm(super_arm, ctx)
+        # generate 4 profit blocks one per user
+        profit_blocks = self.get_context_building_blocks(budgets_array=budgets_array,
+                                                         n_users=n_users,
+                                                         reference_price=reference_price)
+        # aggregate them according to the given context
+        learner_rewards = self.assemble_profit(profit_blocks, ctx, flatten=True)
+
         return {
-            "profit":          self.__profit_per_user(n_users, reference_price),
-            "noise":           (noise_alpha, exp_number_noise),
-            "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
+            "learner_rewards": learner_rewards - np.array(super_arm),
+            "noise": (noise_alpha, exp_number_noise),
+            "profit": np.sum(learner_rewards - np.array(super_arm)),
         }
 
     def get_core_entities(self):
@@ -222,69 +258,59 @@ class Environment:
         self.__set_campaign_budgets(old_budget)  # restore old budget
         return blocks_p
 
+    def budget_array_from_superarm(self, super_arm, contexts):
+        """ map the super arm result with blocks of budget for every possible context participant """
+        p_users = self.all_prob_users
+        if len(super_arm) / len(contexts) != 5.0:
+            raise ValueError(f"Super arm not compatible with context {len(super_arm)}/{len(contexts)} != 5 \n "
+                             f"{super_arm} || {contexts}")
+        budgets = np.array(super_arm).reshape((len(contexts), 5))
+        result = np.zeros((4, 5))
+        for i, ctx in enumerate(contexts):
+            mask = np.array(ctx)
+            scaled_mask = mask * np.array(p_users) / np.sum(mask * np.array(p_users))
+            scaled_mask = scaled_mask.reshape((len(ctx), 1))
+            b = budgets[i].reshape((1, 5))
+            result += scaled_mask @ b
+
+        return result  # matrix of scaled budgets
+
+
     def __set_campaign_budgets(self, budget_array):
         for i, cmp in enumerate(self.campaigns):
             self.campaigns[i].change_budget(budget_array[i])
             self.allocated_budget[i] = budget_array[i]
 
-    def __rewards_knapsack(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
-                           n_budgets = 10):
+    def assemble_profit(self, profit_blocks, contexts, flatten=False):
+        """Perform addition and scale by user probability in the context"""
+        assembled_profit = []
+        p_users = self.all_prob_users
+        block = np.array(profit_blocks).T  # transpose profit to (camp x usr)
+        for mask in contexts:
+            scaled_mask = np.array(mask) * np.array(p_users)
+            context_profit = block @ scaled_mask
+            assembled_profit.append(context_profit)
+        if flatten:
+            return np.array(assembled_profit).flatten()
 
-        """Return knapsack rewards for original 3 classes"""
-        old_budget = self.allocated_budget
+        return np.array(assembled_profit)
 
-        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
-        n_classes = len(self.users)
-        n_campaigns = len(self.products)
+    def budget_array_from_k_alloc_4(self, _alloc, flatten=False):
+        """ map the knapsack allocation result with blocks of budget for every possible context participant """
+        # _alloc = [0, 1, 2, 3, 11, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 333]
+        if len(_alloc) != 21:
+            raise ValueError("Knapsack disaggregated alloc needed")
+        alloc_clean = _alloc[1:]  # remove 0
+        a = np.array(alloc_clean).reshape((5, -1))  # reshape in cluster of 4 res x 5 camp
+        tmp = np.reshape(a, len(alloc_clean), order='F')  # rorder per user
+        tmp = tmp.reshape((-1, 5))  # reshape 5 camp x 4 user
 
-        rewards = []
-        for _ in range(n_classes * n_campaigns):
-            rewards.append(-1 * np.array(available_budget.copy()))
-        rewards = np.array(rewards)
+        if flatten:
+            return tmp.flatten()
+        return tmp
 
-        for cmp_index in range(n_campaigns):
-            for budget_idx in range(n_budgets):
-                self.campaigns[cmp_index].change_budget(available_budget[budget_idx])
-                for user_idx, user in enumerate(self.users):
-                    alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
-                            noise_alpha[user_idx][
-                                cmp_index]
-                    value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
-                    expected_gross_profit = self.prob_users[
-                                                user_idx] * alpha * value_per_click * n_users * reference_price
-                    rewards[cmp_index * n_classes + user_idx][budget_idx] += np.single(expected_gross_profit)
-
-        self.__set_campaign_budgets(old_budget)  # restore old budget
-        return rewards, available_budget
-
-    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
-                                      n_budgets = 10):
-        """Return knapsack rewards for fully aggregated user classes"""
-        old_budget = self.allocated_budget
-
-        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
-        n_campaigns = len(self.products)
-
-        rewards = []
-        for _ in range(n_campaigns):
-            rewards.append(-1 * np.array(available_budget.copy()))
-        rewards = np.array(rewards)
-
-        for cmp_index in range(n_campaigns):
-            for budget_idx in range(n_budgets):
-                for user_idx, user in enumerate(self.users):
-                    self.campaigns[cmp_index].change_budget(available_budget[budget_idx] * self.prob_users[
-                        user_idx])  # scale allocated budget by probability of user
-                    alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) *noise_alpha[user_idx][cmp_index]
-                    value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
-                    expected_gross_profit = self.prob_users[user_idx] * alpha * value_per_click * n_users * reference_price
-                    rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
-
-        self.__set_campaign_budgets(old_budget)  # restore old budget
-        return rewards, available_budget
-
-    def __rewards_knapsack_4_user(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
-                                  n_budgets = 10):
+    def __rewards_knapsack_4_user(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5,
+                                  n_budgets=10):
         """Return knapsack rewards compatible with full split of user classes"""
         old_budget = self.allocated_budget
 
@@ -309,9 +335,12 @@ class Environment:
                     true_idx = user_idx
                     if user_idx >= 1:
                         true_idx = user_idx - 1  # normalization to not replicate alpha noise
-                    alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index]) * noise_alpha[true_idx][cmp_index]
+                    alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index]) * \
+                            noise_alpha[true_idx][
+                                cmp_index]
                     value_per_click = user.expected_profit(exp_number_noise[true_idx])[cmp_index]
-                    expected_gross_profit = prob_users[user_idx] * alpha * value_per_click * n_users * reference_price
+                    expected_gross_profit = prob_users[
+                                                user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index * n_classes + user_idx][budget_idx] += np.single(expected_gross_profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget

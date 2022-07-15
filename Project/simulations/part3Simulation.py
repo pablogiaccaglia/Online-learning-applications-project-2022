@@ -1,11 +1,11 @@
-from Environment import Environment
 import numpy as np
-from GPTS_Learner import GPTS_Learner
+
+from learners.GPTS_Learner import GPTS_Learner
 from learners.CombWrapper import CombWrapper
-from SimulationHandler import SimulationHandler
+from simulations.Environment import Environment
+from simulations.SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
-
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
     days = 30
@@ -27,31 +27,29 @@ if __name__ == '__main__':
     """ @@@@ ---------------- @@@@ """
 
     gpts_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget,
-                               is_ucb = False,
-                               is_gaussian = True)
+                               is_ucb=False,
+                               is_gaussian=True)
 
     learners = [gpts_learner]
 
-    simulationHandler = SimulationHandler(environmentConstructor = Environment,
-                                          learners = learners,
-                                          experiments = experiments,
-                                          days = days,
-                                          reference_price = reference_price,
-                                          daily_budget = daily_budget,
-                                          n_users = N_user,
-                                          n_arms = n_arms,
-                                          bool_alpha_noise = bool_alpha_noise,
-                                          bool_n_noise = bool_n_noise,
-                                          print_basic_debug = printBasicDebug,
-                                          print_knapsack_info = printKnapsackInfo,
-                                          step_k = step_k,
-                                          clairvoyant_type = 'aggregated',
-                                          boost_start = boost_start,
-                                          boost_bias = boost_bias,
-                                          boost_discount = boost_discount,
-                                          plot_regressor_progress = 'GP-TS'
+    simulationHandler = SimulationHandler(environmentConstructor=Environment,
+                                          learners=learners,
+                                          experiments=experiments,
+                                          days=days,
+                                          reference_price=reference_price,
+                                          daily_budget=daily_budget,
+                                          n_users=N_user,
+                                          n_arms=n_arms,
+                                          bool_alpha_noise=bool_alpha_noise,
+                                          bool_n_noise=bool_n_noise,
+                                          print_basic_debug=printBasicDebug,
+                                          print_knapsack_info=printKnapsackInfo,
+                                          step_k=step_k,
+                                          clairvoyant_type='aggregated',
+                                          boost_start=boost_start,
+                                          boost_bias=boost_bias,
+                                          boost_discount=boost_discount,
+                                          plot_regressor_progress='GP-TS'
                                           )
 
     simulationHandler.run_simulation()
-
-

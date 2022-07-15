@@ -1,13 +1,13 @@
-from Environment import Environment
 import numpy as np
 from learners.CombWrapper import CombWrapper
-from GPUCB1_Learner import GPUCB1_Learner
-from SwGPUCB1_Learner import SwGPUCB1_Learner
+from learners.GPUCB1_Learner import GPUCB1_Learner
+from learners.SwGPUCB1_Learner import SwGPUCB1_Learner
 from learners.CusumGPUCB1_Learner import CusumGPUCB1Learner
-from SwGTSLearner import SwGTSLearner
-from CusumGTSLearner import CusumGTSLearner
-from GTS_Learner import GTS_Learner
-from SimulationHandler import SimulationHandler
+from learners.SwGTSLearner import SwGTSLearner
+from learners.CusumGTSLearner import CusumGTSLearner
+from learners.GTS_Learner import GTS_Learner
+from simulations.Environment import Environment
+from simulations.SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """

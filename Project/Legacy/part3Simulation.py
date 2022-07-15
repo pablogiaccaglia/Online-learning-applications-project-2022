@@ -1,13 +1,10 @@
 import numpy as np
-import pandas as pd
 import progressbar
 
 from Knapsack import Knapsack
-from Part3.GTS_Learner import GTS_Learner
-from Part3.GPTS_Learner import GPTS_Learner
-from Part3.CombWrapper import CombWrapper
-from Part3.GPTS_Learner import GPTS_Learner
-from simulation.Environment import Environment
+from Legacy.CombWrapper import CombWrapper
+from learners.GPTS_Learner import GPTS_Learner
+from simulations.Environment import Environment
 import matplotlib.pyplot as plt
 
 # this simulation can be used for both part 2 and 3

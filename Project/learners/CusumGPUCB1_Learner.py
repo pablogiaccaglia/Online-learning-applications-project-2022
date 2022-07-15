@@ -1,7 +1,8 @@
-from GPUCB1_Learner import GPUCB1_Learner
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
+
+from learners.GPUCB1_Learner import GPUCB1_Learner
 
 
 class CusumGPUCB1Learner(GPUCB1_Learner):

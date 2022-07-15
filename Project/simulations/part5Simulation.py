@@ -1,8 +1,11 @@
 from learners.CombWrapper import CombWrapper
-from GPTS_Learner import GPTS_Learner
-from SimulationHandler import SimulationHandler
+from learners.GPTS_Learner import GPTS_Learner
+
 from simulations.Environment import Environment
 import numpy as np
+
+from simulations.SimulationHandler import SimulationHandler
+
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
 

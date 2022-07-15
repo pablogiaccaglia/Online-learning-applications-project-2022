@@ -1,5 +1,5 @@
-from Part3.GTS_Learner import GTS_Learner
-from Part3.Learner import Learner
+from Legacy.GTS_Learner import GTS_Learner
+from Legacy.Learner import Learner
 import numpy as np
 from Knapsack import Knapsack
 

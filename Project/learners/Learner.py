@@ -1,5 +1,6 @@
 import numpy as np
-from CUSUM import CUSUM
+from learners.CUSUM import CUSUM
+
 
 class Learner:
     def __init__(self, n_arms, cusum_args = None, needs_boost = False):

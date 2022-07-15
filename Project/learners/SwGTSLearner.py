@@ -1,4 +1,4 @@
-from GTS_Learner import GTS_Learner
+from learners.GTS_Learner import GTS_Learner
 import numpy as np
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from Environment import Environment
-from SimulationHandler import SimulationHandler
+from simulations.Environment import Environment
+from simulations.SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
@@ -18,20 +18,20 @@ if __name__ == '__main__':
     printBasicDebug = False
     printKnapsackInfo = True
 
-    simulationHandler = SimulationHandler(environmentConstructor = Environment,
-                                          learners = [],
-                                          experiments = experiments,
-                                          days = days,
-                                          reference_price = reference_price,
-                                          daily_budget = daily_budget,
-                                          n_users = N_user,
-                                          n_arms = n_arms,
-                                          bool_alpha_noise = bool_alpha_noise,
-                                          bool_n_noise = bool_n_noise,
-                                          print_basic_debug = printBasicDebug,
-                                          print_knapsack_info = printKnapsackInfo,
-                                          step_k = step_k,
-                                          clairvoyant_type = 'both'
+    simulationHandler = SimulationHandler(environmentConstructor=Environment,
+                                          learners=[],
+                                          experiments=experiments,
+                                          days=days,
+                                          reference_price=reference_price,
+                                          daily_budget=daily_budget,
+                                          n_users=N_user,
+                                          n_arms=n_arms,
+                                          bool_alpha_noise=bool_alpha_noise,
+                                          bool_n_noise=bool_n_noise,
+                                          print_basic_debug=printBasicDebug,
+                                          print_knapsack_info=printKnapsackInfo,
+                                          step_k=step_k,
+                                          clairvoyant_type='both'
                                           )
 
     simulationHandler.run_simulation()
