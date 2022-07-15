@@ -136,7 +136,7 @@ class Knapsack:
                 formatted_output = formatted_output + budget_str + rew_str + alloc_str
                 formatted_output = formatted_output + "\n\t" + "--" * 5 + "\n"
 
-        print("*" * 30 + " Knapsack output " + "*" * 35)
+        print("*" * 30 + " knapsack output " + "*" * 35)
         print(formatted_output)
 
     def get_output(self, dp_as_dataframe = False) -> Tuple[Union[pd.DataFrame, np.ndarray], np.ndarray]:
@@ -174,8 +174,6 @@ class Knapsack:
 
         # initialize budgets vector
         self.budgets = budgets.copy()
-
-
 
         # initialize rewards matrix
         self.rewards = rewards.copy()

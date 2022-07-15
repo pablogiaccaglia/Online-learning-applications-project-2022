@@ -1,7 +1,7 @@
-from Graph import Graph
-from Product import Product
+from entities.Graph import Graph
+from entities.Product import Product
 import numpy as np
-from Beta import Beta
+from entities.Beta import Beta
 
 
 class LearnableGraph(Graph):

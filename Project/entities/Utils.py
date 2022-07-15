@@ -1,14 +1,16 @@
+import os
 import random
 from random import randint
+from time import sleep
 from typing import Union
+
 import pandas as pd
-from random import uniform
 import numpy as np
-from Graph import Graph
 from random import uniform
 
-from LearnableGraph import LearnableGraph
-from Graph import Graph
+from entities.LearnableGraph import LearnableGraph
+from entities.Graph import Graph
+
 
 def get_probabilities(quantity, padding):
     """it return a random list of probabilities that sum to 1-padding"""
@@ -54,6 +56,7 @@ def random_fully_connected_unknown_graph(products = []):
                                           weighted = False,
                                           known = False)
 
+
 def get_ecommerce_graph(products = [], padding = 0.1):
     return __get_graph_specify_neighbours(products = products,
                                           num_of_neighbours = 2,
@@ -63,7 +66,7 @@ def get_ecommerce_graph(products = [], padding = 0.1):
 
 
 def __get_graph_specify_neighbours(products: list,
-                                   num_of_neighbours,
+                                   num_of_neighbours: Union[int, list],
                                    padding = None,
                                    weighted = True, known = True):
     graph = Graph() if known else LearnableGraph()
@@ -111,7 +114,7 @@ def new_alpha_function(saturation_speed = 1, max_value = 1, activation = 0.1):
     return lambda x: (-1 + 2 / (1 + np.exp(- saturation_speed * (x - activation)))) * max_value
 
 
-def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, n_product=5):
+def noise_matrix_alpha(max_reduction = 0.15, max_global_influence = 0.05, n_user = 3, n_product = 5):
     """ return a 2D list: one row for user and column for products
         it returns the multiplier for a stochastic reduction on alpha function """
     global_influence = uniform(0.0, max_global_influence)  # set day trend
@@ -122,9 +125,77 @@ def noise_matrix_alpha(max_reduction=0.15, max_global_influence=0.05, n_user=3, 
     ]
 
 
-def no_noise_matrix(n_user=3, n_product=5):
+def no_noise_matrix(n_user = 3, n_product = 5):
     return [[1 for c in range(n_product)] for r in range(n_user)]
+
+
+def table_metadata(n_prod, n_users, avail_budget):
+    _col_labels = [str(budget) for budget in avail_budget]
+
+    _row_label_rewards = []
+    _row_labels_dp_table = ['0']
+    for i in range(1, n_prod + 1):
+        for j in range(1, n_users + 1):
+            # Cij -> campaign i and user j
+            _row_label_rewards.append("C" + str(i) + str(j))
+            _row_labels_dp_table.append("+C" + str(i) + str(j))
+    return _row_label_rewards, _row_labels_dp_table, _col_labels
 
 
 def get_prettyprint_array(arr, row_labels = None, col_labels = None):
     return pd.DataFrame(arr, columns = col_labels, index = row_labels)
+
+
+def clear_output(wait = True, keep_scroll_back = False):
+
+    # Waiting for 1 second to clear the screen
+    if wait:
+        sleep(0.5)
+
+    if keep_scroll_back:
+        """# Clearing the Screen keeping scroll back
+        # posix is os name for linux or mac
+        if os.name == 'posix':
+            os.system('clear')
+        # else screen will be cleared for windows
+        else:
+            os.system('cls')"""
+
+    else:
+        os.system('cls' if os.name == 'nt' else "printf '\033c'")
+
+
+
+def get_colors():
+    # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+    CB91_Blue = '#2CBDFE'
+    CB91_Green = '#47DBCD'
+    CB91_Pink = '#F3A0F2'
+    CB91_Purple = '#9D2EC5'
+    CB91_Violet = '#661D98'
+    CB91_Amber = '#F5B14C'
+    CB91_Red = '#fe2c54'
+    CB91_Orange = '#fe6d2c'
+
+    colors = [CB91_Blue, CB91_Amber, CB91_Purple, CB91_Green, CB91_Pink, CB91_Violet, CB91_Red, CB91_Orange]
+
+    colors2 = ['#78C850',  # Grass
+                        '#F08030',  # Fire
+                        '#6890F0',  # Water
+                        '#A8B820',  # Bug
+                        '#A8A878',  # Normal
+                        '#A040A0',  # Poison
+                        '#F8D030',  # Electric
+                        '#E0C068',  # Ground
+                        '#EE99AC',  # Fairy
+                        '#C03028',  # Fighting
+                        '#F85888',  # Psychic
+                        '#B8A038',  # Rock
+                        '#705898',  # Ghost
+                        '#7038F8',  # Dragon
+                        ]
+
+    return colors.copy()
+
+
