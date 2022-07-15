@@ -16,31 +16,45 @@ class CombWrapper:
 
     (as GTS_Learner class)
     """
-    def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget):  # arms are the budgets (e.g 0,10,20...)
+    def __init__(self, learner_constructor, n_campaigns, n_arms, max_budget, arm_distance):  # arms are the budgets (e.g 0,10,20...)
         self.learners = []
         self.max_b = max_budget
         self.last_knapsack_reward = []
-        # distribute arms uniformly in range (max/n_arms, maxbudget)
-        self.arms = [int(i * max_budget / n_arms) for i in range(0, n_arms + 1)]
-        # initialize one learner for each campaign
+        self.arm_distance = arm_distance
+        #self.arms = [int(i * max_budget / n_arms) for i in range(0, n_arms + 1)] distribute over max budget
+        self.arms = [int(i * arm_distance) for i in range(0, n_arms+1)] # distribute arms by arm distance
+
         # this init does not affect GP
-        mean = 50   # !! setting too low value can cause stalls due to cost of arms
-        var = 200
+        mean = 0
+        var = 30
         for _ in range(n_campaigns):
             self.learners.append(learner_constructor(self.arms, mean, var))
 
     def pull_super_arm(self) -> np.array:
-        """ Return an array budget with the suggested allocation of budgets """
+        """ Return an array budget with the super arm allocation of budgets """
         rewards = []
         for learner in self.learners:
-            idx_max, all_arms = learner.pull_arm()
-            # embed the cost in the combinatorial problem formulation
-            # knapsack_r = np.array(all_arms) - np.array(self.arms)
-            knapsack_r = np.array(all_arms)
+            idx_max, all_samples = learner.pull_arm()
+            knapsack_r = np.array(all_samples)  # don't remove allocation cost, let learner work with estimated profits
             rewards.append(knapsack_r)
-        #print(f"reward matrix \n{rewards}")
+
+        # add padding for investments up to max budget, needed by knapsack algorithm
         budgets = np.array(self.arms)
-        k = Knapsack(rewards=np.array(rewards), budgets=budgets)
+        step = self.arm_distance
+        start = np.max(budgets) + step
+        stop = self.max_b + step
+        padding_budgets = np.arange(start, stop, step)
+        budgets = np.concatenate([budgets, padding_budgets])
+
+        padding_reward = np.zeros((len(self.learners), len(padding_budgets)))
+        for i_r, r in enumerate(rewards):
+            r_last = r[-1]
+            for j, _ in enumerate(padding_reward[i_r]):
+                padding_reward[i_r][j] = r_last - step * j
+        rewards = np.concatenate([np.array(rewards), padding_reward], axis=1)
+
+        # Knapsack execution
+        k = Knapsack(rewards=rewards, budgets=budgets)
         k.solve()
         arg_max = np.argmax(k.get_output()[0][-1])
         alloc = k.get_output()[1][-1][arg_max]
@@ -48,7 +62,7 @@ class CombWrapper:
         # best allocation possible after combinatorial optimization problem
         super_arms = alloc[1:]
 
-        if (len(super_arms) > 5):
+        if len(super_arms) > 5:
             # reshape superarms in case of multi campaign knapsack
             # knapsack output [c11,c12,c13,c21,c22,c23] -> [c11,c21, c12, c22. c13.c23]
             group_size = int(len(super_arms) / 5)
@@ -60,11 +74,9 @@ class CombWrapper:
 
     def update_observations(self, super_arm, env_rewards, show_warning=False):
         index_arm = self.__indexes_super_arm(super_arm)
-        """print(super_arm)
-        print(index_arm)
-        print(env_rewards)"""
         not_pulled = 0
         for i, learner in enumerate(self.learners):
+            #if index_arm[i] != 0:   # TRY not update pulling of zero
             reward = np.array(env_rewards).flatten()[i]
             learner.update(index_arm[i], reward)
             if index_arm[i] == 0:
