@@ -228,7 +228,6 @@ class SimulationHandler:
                 # -----------------------------------------------------------------
 
                 if self.is_unknown_graph:
-                    print("ciao")
                     self.environment.set_user_graphs(
                             self.estimated_fully_conn_graphs)  # set real real_graphs for clavoyrant algorithm
 
@@ -536,6 +535,19 @@ class SimulationHandler:
             axs[0].plot(d, np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0), colors_learners[learnerIdx],
                         label = bandit_name, alpha = opacity)
 
+            mean = np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)
+            std = np.std(learners_rewards_per_experiment[learnerIdx],
+                         axis = 0)
+
+            axs[0].fill_between(
+                    np.array(d).ravel(),
+                    mean - 1.96 * std,
+                    mean + 1.96 * std,
+                    alpha = 0.1,
+                    label = r"95% confidence interval",
+                    color = colors_learners[learnerIdx]
+            )
+
         if self.clairvoyant_type != 'both':
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
                         label = "clairvoyant", alpha = opacity)
@@ -582,14 +594,6 @@ class SimulationHandler:
 
             for learnerIdx in range(len(self.learners)):
                 bandit_name = self.learners[learnerIdx].bandit_name
-
-                """print(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx])
-                print()
-
-                print(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1))"""
-
-                print(np.std(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1), axis = 0))
-                print(np.std(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
 
                 axs[2].plot(d, np.cumsum(
                         np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
