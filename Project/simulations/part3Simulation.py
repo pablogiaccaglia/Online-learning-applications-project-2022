@@ -7,8 +7,8 @@ from SimulationHandler import SimulationHandler
 if __name__ == '__main__':
 
     """ @@@@ simulations SETUP @@@@ """
-    experiments = 2
-    days = 300
+    experiments = 5
+    days = 12
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -49,7 +49,7 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
                                           boost_discount = boost_discount,
-                                          plot_regressor_progress = 'GP-TS'
+                                          plot_regressor_progress = None
                                           )
 
     simulationHandler.run_simulation()

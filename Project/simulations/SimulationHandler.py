@@ -362,10 +362,10 @@ class SimulationHandler:
 
         if self.clairvoyant_type != 'both':
             varsDict[util.retrieve_name(avgTotalProfit)] = float(
-                np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+                    np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
 
             varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
-                np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+                    np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
 
             varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t1))
             varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t1))
@@ -379,18 +379,18 @@ class SimulationHandler:
             print(f"days simulated: {self.days}")
             print(f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
             print(
-                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+                    f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
             print("----------------------------")
             print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)]:.4f}€")
             print(
-                f"average clairvoyant profit per day standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
+                    f"average clairvoyant profit per day standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
 
         else:
 
             varsDict[util.retrieve_name(avgTotalProfit)] = float(
-                np.mean(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
+                    np.mean(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
             varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
-                np.std(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
+                    np.std(np.sum(clairvoyant_rewards_per_experiment_t2, axis = 1)))
             varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t2))
             varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t2))
 
@@ -403,15 +403,15 @@ class SimulationHandler:
             print(f"days simulated: {self.days}")
             print(f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
             print(
-                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+                    f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
             print("----------------------------")
             print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)]:.4f}€")
             print(f"average standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
 
             varsDict[util.retrieve_name(avgTotalProfit)] = float(
-                np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+                    np.mean(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
             varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
-                np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
+                    np.std(np.sum(clairvoyant_rewards_per_experiment_t1, axis = 1)))
             varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(clairvoyant_rewards_per_experiment_t1))
             varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(np.std(clairvoyant_rewards_per_experiment_t1))
 
@@ -425,7 +425,7 @@ class SimulationHandler:
             print(
                     f"average clairvoyant total profit:\t {varsDict[util.retrieve_name(avgTotalProfit)]:.4f}€")
             print(
-                f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
+                    f"average clairvoyant total profit standard deviation:\t {varsDict[util.retrieve_name(avgTotalProfitStd)]:.4f}€")
             print("----------------------------")
             print(f"average clairvoyant profit per day:\t {varsDict[util.retrieve_name(avgProfitPerDay)] :.4f}€")
             print(f"average standard deviation:\t {varsDict[util.retrieve_name(avgProfitPerDayStd)]:.4f}€")
@@ -433,20 +433,29 @@ class SimulationHandler:
         for learnerIdx, learner in enumerate(self.learners):
 
             varsDict[util.retrieve_name(avgTotalProfit)] = float(
-                np.mean(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+                    np.mean(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+
             varsDict[util.retrieve_name(avgTotalProfitStd)] = float(
-                np.std(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+                    np.std(np.sum(learners_rewards_per_experiment[learnerIdx], axis = 1)))
+
             varsDict[util.retrieve_name(avgProfitPerDay)] = float(np.mean(learners_rewards_per_experiment[learnerIdx]))
+
             varsDict[util.retrieve_name(avgProfitPerDayStd)] = float(
-                np.std(learners_rewards_per_experiment[learnerIdx]))
+                    np.std(learners_rewards_per_experiment[learnerIdx]))
+
             varsDict[util.retrieve_name(avgTotalRegret)] = float(np.mean(
-                np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
+                    np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                           axis = 1)))
+
             varsDict[util.retrieve_name(avgTotalRegretStd)] = float(np.std(
-                np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
+                    np.sum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                           axis = 1)))
+
             varsDict[util.retrieve_name(avgRegretPerDay)] = float(
-                np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
+                    np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
+
             varsDict[util.retrieve_name(avgRegretPerDayStd)] = float(
-                np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
+                    np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx]))
 
             if self.save_results_to_file:
                 key = learner.bandit_name
@@ -481,7 +490,7 @@ class SimulationHandler:
 
         if self.save_results_to_file:
             with open('results.json', 'w') as f:
-                json.dump(results, f, ensure_ascii=False, indent=4)
+                json.dump(results, f, ensure_ascii = False, indent = 4)
 
         plt.close('all')
 
@@ -542,6 +551,23 @@ class SimulationHandler:
             axs[1].plot(d, np.cumsum(np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)),
                         colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
 
+            std = np.std(
+                    np.cumsum(learners_rewards_per_experiment[learnerIdx],
+                              axis = 1), axis = 0)
+
+            mean = np.cumsum(
+                    np.mean(learners_rewards_per_experiment[learnerIdx],
+                            axis = 0))
+
+            axs[1].fill_between(
+                    np.array(d).ravel(),
+                    mean - 1.96 * std,
+                    mean + 1.96 * std,
+                    alpha = 0.1,
+                    label = r"95% confidence interval",
+                    color = colors_learners[learnerIdx]
+            )
+
         axs[0].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                       ncol = 2, mode = "expand", borderaxespad = 0.)
         axs[1].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
@@ -556,16 +582,56 @@ class SimulationHandler:
 
             for learnerIdx in range(len(self.learners)):
                 bandit_name = self.learners[learnerIdx].bandit_name
+
+                """print(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx])
+                print()
+
+                print(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1))"""
+
+                print(np.std(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1), axis = 0))
+                print(np.std(np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx], axis = 1)))
+
                 axs[2].plot(d, np.cumsum(
                         np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                                 axis = 0)),
                             colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
+
+                std = np.std(
+                    np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                              axis = 1), axis = 0)
+
+                mean = np.cumsum(
+                        np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                                axis = 0))
+
+                axs[2].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
 
             for learnerIdx in range(len(self.learners)):
                 bandit_name = self.learners[learnerIdx].bandit_name
                 axs[3].plot(d,
                             np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                                     axis = 0), colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
+
+                mean = np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                               axis = 0)
+                std = np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                             axis = 0)
+
+                axs[3].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
 
             axs[2].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                           ncol = 2, mode = "expand", borderaxespad = 0.)
