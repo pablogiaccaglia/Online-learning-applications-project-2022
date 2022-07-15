@@ -20,18 +20,25 @@ class CombWrapper:
                  n_campaigns,
                  n_arms,
                  max_budget,
+                 arm_distance = None,
                  is_ucb = False,
                  is_gaussian = False,
                  kwargs = None):  # arms are the budgets (e.g 0,10,20...)
 
         self.learners = []
         self.max_b = max_budget
+        self.last_knapsack_reward = []
         self.is_ucb = is_ucb
         # distribute arms uniformly in range (0, maxbudget)
-        self.arms = [int(i * max_budget / n_arms) for i in range(n_arms + 1)]
+
+        if not arm_distance:
+            arm_distance = max_budget / n_arms
+
+        self.arm_distance = arm_distance
+        self.arms = [int(i * arm_distance) for i in range(0, n_arms + 1)]  # distribute arms by arm distance
         self.is_gaussian = is_gaussian
 
-        # initialize one learner for each campaign
+        # this init does not affect GP
         mean = 350
         var = 90
         for _ in range(n_campaigns):
@@ -60,10 +67,27 @@ class CombWrapper:
         """ Return an array budget with the suggested allocation of budgets """
         rewards = []
         for learner in self.learners:
-            idx_max, all_arms = learner.pull_arm()
-            rewards.append(all_arms)
-        # print(f"reward matrix \n{rewards}")
+            idx_max, all_samples = learner.pull_arm()
+            knapsack_r = np.array(all_samples)  # don't remove allocation cost, let learner work with estimated profits
+            rewards.append(knapsack_r)
+
         budgets = np.array(self.arms)
+
+        # add padding for investments up to max budget, needed by knapsack algorithm
+        budgets = np.array(self.arms)
+        step = self.arm_distance
+        start = np.max(budgets) + step
+        stop = self.max_b + step
+        padding_budgets = np.arange(start, stop, step)
+        budgets = np.concatenate([budgets, padding_budgets])
+
+        padding_reward = np.zeros((len(self.learners), len(padding_budgets)))
+        for i_r, r in enumerate(rewards):
+            r_last = r[-1]
+            for j, _ in enumerate(padding_reward[i_r]):
+                padding_reward[i_r][j] = r_last - step * j
+        rewards = np.concatenate([np.array(rewards), padding_reward], axis = 1)
+
         k = Knapsack(rewards = np.array(rewards), budgets = budgets)
         k.solve()
 
@@ -89,20 +113,33 @@ class CombWrapper:
             arg_max = np.argmax(k.get_output()[0][-1])
 
         alloc = k.get_output()[1][-1][arg_max]
-        super_arms = alloc  # todo the get of result can be optimized
+
+        self.last_knapsack_reward = rewards
+        # best allocation possible after combinatorial optimization problem
+        super_arms = alloc[1:]
+
+        if len(super_arms) > 5:
+            # reshape superarms in case of multi campaign knapsack
+            # knapsack output [c11,c12,c13,c21,c22,c23] -> [c11,c21, c12, c22. c13.c23]
+            group_size = int(len(super_arms) / 5)
+            a = np.array(super_arms).reshape((5, group_size))  # reshape in cluster of 3 res x 5 camp
+            tmp = np.reshape(a, len(super_arms), order = 'F')  # reorder per user
+            return tmp  # [ctx1|ctx2|ctx3|ctx4]  budget output in context execution
 
         # return best allocation possible after combinatorial optimization problem
-        return super_arms[1:]
+        return super_arms
 
-    def update_observations(self, super_arm, env_rewards):
+    def update_observations(self, super_arm, env_rewards, show_warning = False):
         index_arm = self.__indexes_super_arm(super_arm)
-        """print(gpucb1_super_arm)
-        print(index_arm)
-        print(env_rewards)"""
+        not_pulled = 0
         for i, learner in enumerate(self.learners):
-            # for each learner update the net reward of the selected arm
-            net_reward = env_rewards[i] - super_arm[i]
-            learner.update(index_arm[i], net_reward)
+            # if index_arm[i] != 0:   # TRY not update pulling of zero
+            reward = np.array(env_rewards).flatten()[i]
+            learner.update(index_arm[i], reward)
+            if index_arm[i] == 0:
+                not_pulled += 1
+        if not_pulled > 0 and show_warning:
+            print(f"\n\033[93mWarning: {not_pulled}/{len(self.learners)} learners are not pulling arms")
 
     def __indexes_super_arm(self, super_arm):
         """Given a super arm return the corresponding index for every learner

@@ -19,22 +19,17 @@ class GPTS_Learner(Learner):
         self.bandit_name = 'GP-TS'
 
         alpha = 0.5
-        # with first term of RBF exploration can be regulated high value more correlation
-        # distance
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-3, 1e3))  # to be adjusted
+        theta = 300  # regulates how wide the uncertainty area is (control exploration)
+        l = 100  # regulate how close 2 points should be to be similar
+        kernel = C(theta, (1e-3, 1e3)) * RBF(l, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel = kernel,
                                            alpha = alpha ** 2,
-                                           # normalize_y = True,  # TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
-                                           #                         USING IT RIGHT. NORMALIZE Y MANUALLY
+                                           normalize_y = True,
                                            n_restarts_optimizer = 9)
 
     def update_observations(self, pulled_arm, reward):
         super().update_observations(pulled_arm, reward)
         self.pulled_arms.append(self.arms[pulled_arm])
-        """        if not self.pulled_arms.any():
-            self.pulled_arms = np.append(self.pulled_arms, gpucb1_super_arm)
-        else:
-            self.pulled_arms = np.append(np.atleast_2d(self.pulled_arms), np.atleast_2d(gpucb1_super_arm), axis=0)"""
 
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T
@@ -67,8 +62,6 @@ class GPTS_Learner(Learner):
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
                                            alpha=alpha ** 2,
-                                           # normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
-                                           #                          USING IT RIGHT. NORMALIZE Y MANUALLY
                                            n_restarts_optimizer=9)
 
         self.pulled_arms = []

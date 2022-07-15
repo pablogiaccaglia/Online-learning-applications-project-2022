@@ -99,7 +99,14 @@ class SimulationHandler:
         if self.plot_regressor_progress:
             img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
             axs = axss.flatten()
-            plt.subplots_adjust(hspace = 0.8, top = 0.8)
+            plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.9, wspace = 0.4, bottom = 0.1)
+
+            for ax in axs:
+                ax.grid(alpha = 0.2)
+
+            sns.set_style("ticks")
+            sns.despine()
+            sns.set_context('notebook')
 
             for idx, learner in enumerate(self.learners):
                 if learner.bandit_name == self.plot_regressor_progress:
@@ -236,6 +243,7 @@ class SimulationHandler:
 
                     self.learners_rewards_per_day[learnerIdx].append(profit_env - np.sum(super_arm))
                     profit_list = list(sim_obj["profit_campaign"][: -1])
+                    profit_list = np.array(profit_list) - np.array(super_arm)
 
                     # BOOST DONE ONLY TO LEARNERS USING GP REGRESSOR
                     if self.boost_start and learner.needs_boost and day <= 4:
@@ -260,18 +268,19 @@ class SimulationHandler:
                         axs[i].cla()
                         axs[i].set_xlabel("budget")
                         axs[i].set_ylabel("profit")
-                        axs[i].plot(x, rw, colors[-1], label = 'clairvoyant profit')
+                        axs[i].plot(x, rw, colors[-1], label = 'clairvoyant profit', alpha = 0.5)
                         # axs[i].plot(x2, comb_learner.last_knapsack_reward[i])
                         mean, std = learner_to_observe.get_gp_data()
                         # print(std[0])
                         # print(mean[0][0])
-                        axs[i].plot(x2, mean[i], colors[i], label = 'estimated profit')
+                        axs[i].plot(x2, mean[i], colors[i], label = 'estimated profit', alpha = 0.5)
                         axs[i].fill_between(
                                 np.array(x2).ravel(),
                                 mean[i] - 1.96 * std[i],
                                 mean[i] + 1.96 * std[i],
-                                alpha = 0.5,
+                                alpha = 0.1,
                                 label = r"95% confidence interval",
+                                color = colors[i]
                         )
 
                         axs[i].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
@@ -281,9 +290,9 @@ class SimulationHandler:
                                     len(self.clairvoyant_rewards_per_day_t1))
                     axs[5].set_xlabel("days")
                     axs[5].set_ylabel("reward")
-                    axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward")
+                    axs[5].plot(d, self.clairvoyant_rewards_per_day_t1, colors[-1], label = "clairvoyant reward", alpha = 0.5)
                     axs[5].plot(d, self.learners_rewards_per_day[idx_learner_to_observe], colors[-2],
-                                label = "bandit reward")
+                                label = "bandit reward", alpha = 0.5)
                     axs[5].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                                   ncol = 2, mode = "expand", borderaxespad = 0.)
 
@@ -298,12 +307,16 @@ class SimulationHandler:
             for learnerIdx in range(len(self.learners)):
                 self.learners_rewards_per_experiment[learnerIdx].append(self.learners_rewards_per_day[learnerIdx])
 
-        self.__plot_results()
+        # self.__plot_results(sns_style = 'white') # looks nice
+
+        # self.__plot_results(sns_style = 'black') # looks nice but i do not it like that much
+        self.__plot_results(sns_style = 'matplotlib')  # uses default matplotlib style
 
     # TODO A PLOT HANDLER SHOULD DO ALL THE WORK HERE !
+    # TODO -> PLOT CONFIDENCE INTERVALS !
 
     def __plot_results(self, remove_splines = True, offset_axes = True, opacity = 0.5, sns_context = 'notebook',
-                       set_ticks = False, sns_style = 'white', enable_grid = True, hspace = 1, wspace = 0.5):
+                       set_ticks = False, sns_style = 'matplotlib', enable_grid = True, hspace = 1, wspace = 0.5):
 
         clairvoyant_rewards_per_experiment_t1 = np.array(self.clairvoyant_rewards_per_experiment_t1)
 
@@ -351,7 +364,8 @@ class SimulationHandler:
         plt.close('all')
 
         sns.set_context(context = sns_context)
-        # sns.set_style(style = sns_style)
+        if sns_style != 'matplotlib':
+            sns.set_style(style = sns_style)
 
         if set_ticks:
             sns.set_style("ticks")

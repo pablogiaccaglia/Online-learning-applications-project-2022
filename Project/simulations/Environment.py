@@ -143,6 +143,7 @@ class Environment:
 
         n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
 
+        # TODO AVOID COMPUTING ALL THESE FUNCTIONS EVERY TIME -> SLOWS COMPUTATION!
         # knapsack disaggregated reward computation
         rewards_k, avail_budgets = self.__rewards_knapsack(n_users,
                                                            reference_price,
@@ -157,10 +158,19 @@ class Environment:
                                                                               exp_number_noise = exp_number_noise,
                                                                               step_size = step_k,
                                                                               n_budgets = n_budget_k)
+        # knapsack disaggregated for 4 users
+        rewards_k_4, avail_budgets_4 = self.__rewards_knapsack_4_user(n_users,
+                                                                      reference_price,
+                                                                      noise_alpha,
+                                                                      exp_number_noise = exp_number_noise,
+                                                                      step_size = step_k,
+                                                                      n_budgets = n_budget_k)
+
         return {
             "profit":          self.__profit_per_user(n_users, reference_price),
             "noise":           (noise_alpha, exp_number_noise),
             "reward_k":        (rewards_k, avail_budgets),
+            "reward_k_4":      (rewards_k_4, avail_budgets_4),
             "reward_k_agg":    (rewards_k_agg, avail_budgets_agg),
             "profit_campaign": self.__profit_per_campaign(n_users, reference_price),
         }
@@ -188,25 +198,17 @@ class Environment:
         self.campaigns[index].change_budget(budget)
         self.allocated_budget[index] = budget
 
-    def get_context_building_blocks(self, budgets_array, prob_users, n_users, reference_price):
+    def get_context_building_blocks(self, budgets_array, n_users, reference_price):
         """ return knapsack rewards and profits for each possible split of the context
-            Alert -> The user probability are taken by outside env"""
-        # fixme bug here all 0 vectors returned
+            Alert -> The result is not scaled by user probability"""
         # noise replication as last available data in env
         if len(budgets_array) != 4:
             raise ValueError("Illegal budget array size")
-        if sum(prob_users) <= 0.99:
-            raise ValueError("Illegal user's probability")
 
         old_budget = self.allocated_budget
         blocks_p = []
         # trick for user1 appearing 2 times
         indexes = [0, 0, 1, 2]
-
-        if len(indexes) != len(prob_users):
-            raise ValueError(f"probability of users error {len(indexes)} != {len(prob_users)}")
-        if prob_users[0] != prob_users[1]:
-            raise ValueError(f"probability of user 1 split should be uniform 0.5 != {prob_users[0]} or {prob_users[1]}")
 
         for budget_i, user_i in enumerate(indexes):
             budget = budgets_array[budget_i]
@@ -214,8 +216,7 @@ class Environment:
                 raise ValueError(f"Illegal {budget_i} budget size")
             # force a temporary budget
             self.__set_campaign_budgets(budget)
-            p_user = prob_users[budget_i]  # access user probability
-            profit = np.array(self.__profit_campaign_per_user(user_i, p_user, n_users, reference_price))
+            profit = np.array(self.__profit_campaign_per_user(user_i, n_users, reference_price))
             blocks_p.append(profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
@@ -229,7 +230,7 @@ class Environment:
     def __rewards_knapsack(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
                            n_budgets = 10):
 
-        # print("*" * 25 + " knapsack rewards " + "*" * 30)
+        """Return knapsack rewards for original 3 classes"""
         old_budget = self.allocated_budget
 
         available_budget = [step_size * (i + 1) for i in range(n_budgets)]
@@ -239,7 +240,6 @@ class Environment:
         rewards = []
         for _ in range(n_classes * n_campaigns):
             rewards.append(-1 * np.array(available_budget.copy()))
-
         rewards = np.array(rewards)
 
         for cmp_index in range(n_campaigns):
@@ -252,17 +252,14 @@ class Environment:
                     value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
                     expected_gross_profit = self.prob_users[
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
-
                     rewards[cmp_index * n_classes + user_idx][budget_idx] += np.single(expected_gross_profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
-
         return rewards, available_budget
 
     def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
                                       n_budgets = 10):
-
-        # print("*" * 25 + " knapsack rewards " + "*" * 30)
+        """Return knapsack rewards for fully aggregated user classes"""
         old_budget = self.allocated_budget
 
         available_budget = [step_size * (i + 1) for i in range(n_budgets)]
@@ -278,13 +275,44 @@ class Environment:
                 for user_idx, user in enumerate(self.users):
                     self.campaigns[cmp_index].change_budget(available_budget[budget_idx] * self.prob_users[
                         user_idx])  # scale allocated budget by probability of user
-                    alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
-                            noise_alpha[user_idx][
-                                cmp_index]
+                    alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) *noise_alpha[user_idx][cmp_index]
                     value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
-                    expected_gross_profit = self.prob_users[
-                                                user_idx] * alpha * value_per_click * n_users * reference_price
+                    expected_gross_profit = self.prob_users[user_idx] * alpha * value_per_click * n_users * reference_price
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
+
+        self.__set_campaign_budgets(old_budget)  # restore old budget
+        return rewards, available_budget
+
+    def __rewards_knapsack_4_user(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size = 5,
+                                  n_budgets = 10):
+        """Return knapsack rewards compatible with full split of user classes"""
+        old_budget = self.allocated_budget
+
+        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
+        n_classes = 4
+        n_campaigns = len(self.products)
+        prob_users = [self.prob_users[0] * 0.5,
+                      self.prob_users[0] * 0.5,
+                      self.prob_users[1],
+                      self.prob_users[2]]
+        users = [self.users[0], self.users[0], self.users[1], self.users[2]]
+
+        rewards = []
+        for _ in range(n_classes * n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
+
+        for cmp_index, cmp in enumerate(self.campaigns):
+            for budget_idx in range(n_budgets):
+                cmp.change_budget(available_budget[budget_idx])
+                for user_idx, user in enumerate(users):
+                    true_idx = user_idx
+                    if user_idx >= 1:
+                        true_idx = user_idx - 1  # normalization to not replicate alpha noise
+                    alpha = cmp.get_alpha_i(user.alpha_functions[cmp_index]) * noise_alpha[true_idx][cmp_index]
+                    value_per_click = user.expected_profit(exp_number_noise[true_idx])[cmp_index]
+                    expected_gross_profit = prob_users[user_idx] * alpha * value_per_click * n_users * reference_price
+                    rewards[cmp_index * n_classes + user_idx][budget_idx] += np.single(expected_gross_profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget
@@ -352,15 +380,13 @@ class Environment:
 
         return tuple(campaign_profits)
 
-    def __profit_campaign_per_user(self, user_index, p_user, n_users, reference_price):
+    def __profit_campaign_per_user(self, user_index, n_users, reference_price):
         """ Not scaled user probability profit for a campaign with forced budget of caller"""
-        # fixme bug here making all to 0
         noise_alpha = self.noise_alpha
         exp_number_noise = self.exp_number_noise
         campaign_profits = []
         u = self.users[user_index]
         old_budget = self.allocated_budget  # save old budget
-        p_u = p_user
 
         for i, cmp in enumerate(self.campaigns):
             # cmp.change_budget(old_budget[i])  # not need to scale by user prob the budget
@@ -381,34 +407,6 @@ class Environment:
         self.__set_campaign_budgets(old_budget)  # restore old budget
 
         return campaign_profits
-
-    def __rewards_knapsack_per_user(self, user_index, n_users, reference_price, step_size = 5, n_budgets = 10):
-
-        """ knapsack reward of a single user not scaled by user probability"""
-        noise_alpha = self.noise_alpha
-        exp_number_noise = self.exp_number_noise
-        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
-        n_campaigns = len(self.products)
-        u = self.users[user_index]
-
-        old_budget = self.allocated_budget  # save old budget
-
-        rewards = []
-        for _ in range(n_campaigns):
-            rewards.append(-1 * np.array(available_budget.copy()))
-        rewards = np.array(rewards)
-
-        for cmp_index in range(n_campaigns):
-            for budget_idx in range(n_budgets):
-                self.campaigns[cmp_index].change_budget(available_budget[budget_idx])
-                alpha = self.campaigns[cmp_index].get_alpha_i(u.alpha_functions[cmp_index]) \
-                        * noise_alpha[user_index][cmp_index]
-                value_per_click = u.expected_profit(exp_number_noise[user_index])[cmp_index]
-                gross_profit = self.prob_users[user_index] * alpha * value_per_click * n_users * reference_price
-                rewards[cmp_index][budget_idx] += np.single(gross_profit)
-
-        self.__set_campaign_budgets(old_budget)  # restore old budget
-        return rewards, available_budget
 
     def __set_user_graph(self, index, graph):
         self.users[index].change_graph(graph)

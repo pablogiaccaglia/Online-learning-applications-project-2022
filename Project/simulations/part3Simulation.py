@@ -5,10 +5,10 @@ from learners.CombWrapper import CombWrapper
 from SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
-    # TODO ADD BOOST AND PRINT OF CONFIDENCE INTERVAL
+
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
-    days = 3
+    days = 30
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
