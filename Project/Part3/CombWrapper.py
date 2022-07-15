@@ -22,7 +22,7 @@ class CombWrapper:
         self.last_knapsack_reward = []
         self.arm_distance = arm_distance
         #self.arms = [int(i * max_budget / n_arms) for i in range(0, n_arms + 1)] distribute over max budget
-        self.arms = [int(i * arm_distance) for i in range(0, n_arms+1)] # distribute arms by arm distance
+        self.arms = [int(i * arm_distance) for i in range(0, n_arms+1)]  # distribute arms by arm distance
 
         # this init does not affect GP
         mean = 0
@@ -46,11 +46,12 @@ class CombWrapper:
         padding_budgets = np.arange(start, stop, step)
         budgets = np.concatenate([budgets, padding_budgets])
 
-        padding_reward = np.zeros((len(self.learners), len(padding_budgets)))
+        padding_reward = -1 * np.ones((len(self.learners), len(padding_budgets)))
+        """ trial of smooth reduction of dummy values of knapsack padding 
         for i_r, r in enumerate(rewards):
             r_last = r[-1]
             for j, _ in enumerate(padding_reward[i_r]):
-                padding_reward[i_r][j] = r_last - step * j
+                padding_reward[i_r][j] = r_last - step * j"""
         rewards = np.concatenate([np.array(rewards), padding_reward], axis=1)
 
         # Knapsack execution
