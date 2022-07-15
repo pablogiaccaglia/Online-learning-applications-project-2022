@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 days = 100
 N_user = 400  # reference for what alpha = 1 refers to
 reference_price = 4.0
-daily_budget = 70 * 5
-n_arms = 20
+daily_budget = 90 * 5
+n_arms = 30
+arm_distance=10
 step_k = 2
 environment = Environment()
 
@@ -31,7 +32,7 @@ printKnapsackInfo = True
 runAggregated = False  # mutual exclusive with run disaggregated
 """ Change here the wrapper for the core bandit algorithm """
 # comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget)
-comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget)
+comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget, arm_distance)
 """ @@@@ ---------------- @@@@ """
 
 
@@ -125,6 +126,8 @@ for day in progressbar.progressbar(range(days)):
     profit_env = sim_obj_2["profit_campaign"][-1]
     learner_rewards.append(profit_env - np.sum(super_arm))
     profit_list = list(sim_obj_2["profit_campaign"][:-1])
+    # TEST TEST it work better !!
+    profit_list = np.array(profit_list) - np.array(super_arm)
     if boost_start and day <= 4:
         for i, s_arm in enumerate(super_arm):
             if s_arm == 0:
@@ -138,9 +141,9 @@ for day in progressbar.progressbar(range(days)):
     # solve comb problem for tomorrow
     super_arm = comb_learner.pull_super_arm()
     # -----------------------------------------------------------------
-    if printBasicDebug and day % 20 == 0:
-        print(f"super arm:  {super_arm}")
-        print(f"alloc knap: {alloc[1:]}")
+    #if printBasicDebug and day % 20 == 0:
+    print(f"super arm:  {super_arm}")
+    print(f"alloc knap: {alloc[1:]}")
 
     if day % 10 == 0:
         axs[5].cla()

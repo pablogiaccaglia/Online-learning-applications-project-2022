@@ -24,7 +24,4 @@ class GTS_Learner(Learner):
         n_samples = len(self.rewards_per_arm[pulled_arm])
 
         if n_samples > 1:  # update std of pulled arm
-            """print(f"list: {self.rewards_per_arm}")
-            print(f"{pulled_arm} -> {self.rewards_per_arm[pulled_arm]}")
-            print(f"Update sigma gts {np.std(self.rewards_per_arm[pulled_arm]) / n_samples}")"""
             self.sigmas[pulled_arm] = np.std(self.rewards_per_arm[pulled_arm]) / n_samples

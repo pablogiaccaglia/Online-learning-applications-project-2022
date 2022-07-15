@@ -1,10 +1,8 @@
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
-from Part3.Learner import Learner
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-from Knapsack import Knapsack
 from Part3.Learner import Learner
 
 
@@ -13,27 +11,22 @@ class GPTS_Learner(Learner):
         super().__init__(len(arms))
         self.n_arms = len(arms)
         self.arms = arms
-        self.means = np.ones(self.n_arms) * prior_mean
-        self.sigmas = np.ones(self.n_arms) * prior_sigma
+        self.means = np.ones(self.n_arms) * prior_mean      # cannot be controlled directly
+        self.sigmas = np.ones(self.n_arms) * prior_sigma    # cannot be controlled directly
         self.pulled_arms = []
 
         alpha = 0.5
-        # with first term of RBF exploration can be regulated high value more correlation
-        # distance
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-3, 1e3))  # to be adjusted
+        theta = 300  # regulates how wide the uncertainty area is (control exploration)
+        l = 100  # regulate how close 2 points should be to be similar
+        kernel = C(theta, (1e-3, 1e3)) * RBF(l, (1e-3, 1e3))  # to be adjusted
         self.gp = GaussianProcessRegressor(kernel=kernel,
                                            alpha=alpha**2,
-                                           normalize_y=True, #  TODO: SKLEARN NORMALIZATION DOES NOT WORK/I AM NOT
-                                           #                         USING IT RIGHT. NORMALIZE Y MANUALLY
+                                           normalize_y=True,
                                            n_restarts_optimizer=9)
 
     def update_observations(self, pulled_arm, reward):
         super().update_observations(pulled_arm, reward)
         self.pulled_arms.append(self.arms[pulled_arm])
-        """        if not self.pulled_arms.any():
-            self.pulled_arms = np.append(self.pulled_arms, super_arm)
-        else:
-            self.pulled_arms = np.append(np.atleast_2d(self.pulled_arms), np.atleast_2d(super_arm), axis=0)"""
 
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T
@@ -49,7 +42,6 @@ class GPTS_Learner(Learner):
         self.update_observations(pulled_super_arm, rewards)
         self.update_model()
 
-    # Same as gts_learner
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""
         arms_value = np.random.normal(self.means, self.sigmas)
