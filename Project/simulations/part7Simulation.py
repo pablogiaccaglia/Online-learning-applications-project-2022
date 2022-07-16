@@ -53,7 +53,7 @@ budgets_array = np.array([
 ]) * 50
 
 context_on = False
-target_feature = [False, False]  # start fully aggregated
+target_feature = [True, True]  # start fully aggregated
 stop_context = False
 context_initialized = False
 swap = 1    # set 0 or 1 do decide order of features
@@ -99,9 +99,9 @@ def context_masks(split_family=False, split_student=False):
 def budget_array_from_k_alloc_4(_alloc, flatten=False):
     """ map the super arm result with blocks of budget for every possible context participant """
     # _alloc = [0, 1, 2, 3, 11, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 333]
-    if len(_alloc) != 21:
+    if len(_alloc) != 20:
         raise ValueError("Knapsack disaggregated alloc needed")
-    alloc_clean = _alloc[1:]  # remove 0
+    alloc_clean = _alloc # 0 already removed
     a = np.array(alloc_clean).reshape((5, -1))  # reshape in cluster of 4 res x 5 camp
     tmp = np.reshape(a, len(alloc_clean), order='F')  # rorder per user
     tmp = tmp.reshape((-1, 5))  # reshape 5 camp x 4 user
@@ -246,7 +246,17 @@ for day in progressbar.progressbar(range(days)):
     rewards_clairvoyant.append(sim_obj["reward_k_disagg"])
     alloc, tot = sim_obj["alloc_disagg"]
     # print(f"Alloc {alloc} tot {tot}")
+    # TEST knapsack allocation on env OK
+    """alloc_k = budget_array_from_k_alloc_4(alloc, flatten=True)
+    sim_obj_2 = environment.replicate_last_day(alloc_k,
+                                               N_user,
+                                               reference_price,
+                                               bool_n_noise,
+                                               bool_n_noise,
+                                               contexts)
 
+    test_rewards = sim_obj_2["learner_rewards"]
+    test = np.sum(test_rewards)"""
     if day == breakpoint_1 or day == breakpoint_2:
         if target_feature_i <= 1:
             context_on = True
@@ -320,7 +330,6 @@ for day in progressbar.progressbar(range(days)):
             else:
                 print(f"The split is  worth {b1} < {b2} \tconfidence={confidence}")
                 split_condition = True
-            c0_reward = []
             ctx_reward = []
 
             split_condition = True  # Force split to see all splits
@@ -346,7 +355,9 @@ for day in progressbar.progressbar(range(days)):
         net_profit_learner = np.sum(learner_rewards)
         base_learner.update_observations(super_arm, learner_rewards)
         base_learner_rewards.append(net_profit_learner)
-        c0_reward.append(net_profit_learner)
+        # use as reference the aggregated case
+        if day < breakpoint_1:
+            c0_reward.append(net_profit_learner)
 
         # print(f"l {super_arm} {np.sum(learner_rewards)}")
 
