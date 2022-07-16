@@ -3,6 +3,7 @@ from learners.GPTS_Learner import GPTS_Learner
 from simulations.Environment import Environment
 from simulations.SimulationHandler import SimulationHandler
 import numpy as np
+from entities.Utils import BanditNames
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
@@ -47,7 +48,7 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
                                           boost_discount = boost_discount,
-                                          plot_regressor_progress = 'GP-TS'
+                                          plot_regressor_progress = BanditNames.GPTS_Learner.name
                                           )
 
     simulationHandler.run_simulation()

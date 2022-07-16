@@ -3,12 +3,12 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-
+from entities.Utils import BanditNames
 from learners.Learner import Learner
 
 
 class GPUCB1_Learner(Learner):
-    def __init__(self, arms, prior_mean, prior_sigma = 1, beta = 50.,
+    def __init__(self, arms, prior_mean, prior_sigma = 1, delta = 0.1,
                  cusum_args = None):  # arms are the budgets (e.g 0,10,20...)
         super().__init__(n_arms = len(arms), cusum_args = cusum_args, needs_boost = True)
         self.n_arms = len(arms)
@@ -19,12 +19,10 @@ class GPUCB1_Learner(Learner):
         self.pulled_arms = []
         self.prior_mean = prior_mean
         self.prior_sigma = prior_sigma
-        self.bandit_name = 'GP-UCB1'
+        self.bandit_name = BanditNames.GPUCB1_Learner.name
 
-        """beta (optional): Hyper-parameter to tune the exploration-exploitation
-            balance. If beta is large, it emphasizes the variance of the unexplored
-            solution solution (i.e. larger curiosity)"""
-        self.beta = beta
+        """controls beta parameter"""
+        self.delta = delta
 
         alpha = 0.5
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))  # to be adjusted
@@ -47,7 +45,11 @@ class GPUCB1_Learner(Learner):
             self.ucbs[armIdx] = self.compute_UCB(armIdx)
 
     def compute_UCB(self, idx):
-        return self.means[idx] + self.sigmas[idx] * np.sqrt(self.beta)
+        if self.t == 0:
+            beta = 2*np.log((np.power(1, 2)*np.power(np.pi, 2)*self.n_arms)/(6*self.delta))
+        else:
+            beta = 2*np.log((np.power(self.t, 2)*np.power(np.pi, 2)*self.n_arms)/(6*self.delta))
+        return self.means[idx] + self.sigmas[idx] * np.sqrt(beta)
 
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T

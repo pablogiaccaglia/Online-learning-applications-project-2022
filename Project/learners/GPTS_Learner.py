@@ -4,7 +4,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from learners.Learner import Learner
-
+from entities.Utils import BanditNames
 
 class GPTS_Learner(Learner):
     def __init__(self, arms, n_campaigns, prior_mean, prior_sigma=1):  # arms are the budgets (e.g 0,10,20...)
@@ -16,7 +16,7 @@ class GPTS_Learner(Learner):
         self.means = np.ones(self.n_arms) * prior_mean      # cannot be controlled directly
         self.sigmas = np.ones(self.n_arms) * prior_sigma    # cannot be controlled directly
         self.pulled_arms = []
-        self.bandit_name = 'GP-TS'
+        self.bandit_name = BanditNames.GPTS_Learner.name
         self.needs_boost = True
 
         alpha = 0.5

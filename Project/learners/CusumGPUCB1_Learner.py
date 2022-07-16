@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 from sklearn.exceptions import ConvergenceWarning
-
+from entities.Utils import BanditNames
 from learners.GPUCB1_Learner import GPUCB1_Learner
 
 
@@ -14,16 +14,16 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                  epsilon = 0.05,
                  detectionThreshold = 20,
                  explorationAlpha = 0.01,
-                 beta = 50.):
+                 delta = 50.):
 
         cusum_args = {"samplesForRefPoint": samplesForRefPoint,
                         "epsilon":            epsilon,
                         "detectionThreshold": detectionThreshold,
                         "explorationAlpha":   explorationAlpha}
 
-        super().__init__(arms, prior_mean, prior_sigma = prior_sigma, beta = beta, cusum_args = cusum_args)
+        super().__init__(arms, prior_mean, prior_sigma = prior_sigma, delta = delta, cusum_args = cusum_args)
 
-        self.bandit_name = 'CUSUM-GP-UCB1'
+        self.bandit_name = BanditNames.CusumGPUCB1Learner.name
 
     # Same as gts_learner
     def pull_arm(self) -> np.array:

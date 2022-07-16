@@ -85,7 +85,7 @@ if __name__ == '__main__':
                               is_ucb = False,
                               is_gaussian = True)
 
-    learners = [gpucb1_learner, sw_gpucb1_learner, cusum_gpucb1_learner, sw_gts_learner, cusum_gts_learner, gts_learner]
+    learners = [gpucb1_learner, sw_gpucb1_learner, gts_learner]
 
     """ Number of users per phase """
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
                                           boost_discount = boost_discount,
-                                          plot_regressor_progress = 'SW-GP-UCB1'
+                                          plot_regressor_progress = None
                                           )
 
     simulationHandler.run_simulation()

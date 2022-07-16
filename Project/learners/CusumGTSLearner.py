@@ -1,6 +1,6 @@
 from learners.GTS_Learner import GTS_Learner
 import numpy as np
-
+from entities.Utils import BanditNames
 
 class CusumGTSLearner(GTS_Learner):
 
@@ -20,7 +20,7 @@ class CusumGTSLearner(GTS_Learner):
         super().__init__(arms, prior_mean = prior_mean, prior_sigma = prior_sigma, cusum_args = cusum_args)
         self.window_collected_rewards_per_arm = [[] for _ in range(self.n_arms)]
 
-        self.bandit_name = 'CUSUM-GTS'
+        self.bandit_name = BanditNames.CusumGTSLearner.name
 
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""

@@ -1,6 +1,6 @@
 from learners.Learner import Learner
 import numpy as np
-
+from entities.Utils import BanditNames
 
 class GTS_Learner(Learner):
     """ every arms induces a gaussian distribution over its expected reward """
@@ -12,7 +12,7 @@ class GTS_Learner(Learner):
         self.sigmas = np.ones(self.n_arms) * prior_sigma
         self.prior_mean = prior_mean
         self.prior_sigma = prior_sigma
-        self.bandit_name = 'GTS'
+        self.bandit_name = BanditNames.GTS_Learner.name
 
     def pull_arm(self) -> np.array:
         """ Pull an arm and the set of value of all the arms"""

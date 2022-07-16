@@ -1,20 +1,21 @@
+from GPUCB1_Learner import GPUCB1_Learner
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
 
 from simulations.Environment import Environment
 import numpy as np
-
+from entities.Utils import BanditNames
 from simulations.SimulationHandler import SimulationHandler
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
 
-    experiments = 2
+    experiments = 10
     days = 30
-    N_user = 300 # reference for what alpha = 1 refers to
+    N_user = 350 # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 500
-    step_k = 2
+    step_k = 5
     n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
     bool_alpha_noise = True
@@ -29,8 +30,16 @@ if __name__ == '__main__':
 
     """ Change here the wrapper for the core bandit algorithm """
     # comb_learner = CombWrapper(GTS_Learner, 5, n_arms, daily_budget, is_ucb = False, is_gaussian = True)
-    comb_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget, is_ucb = False, is_gaussian = True)
-    learners = [comb_learner]
+    gpts_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget, is_ucb = False, is_gaussian = True)
+
+    gpucb1_learner = CombWrapper(GPUCB1_Learner,
+                                 5,
+                                 n_arms,
+                                 daily_budget,
+                                 is_ucb = True,
+                                 is_gaussian = True)
+
+    learners = [gpts_learner, gpucb1_learner]
     simulationHandler = SimulationHandler(environmentConstructor = Environment,
                                           learners = learners,
                                           experiments = experiments,
@@ -48,7 +57,7 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_discount = boost_discount,
                                           boost_bias = boost_bias,
-                                          plot_regressor_progress = 'GP-TS'
+                                          plot_regressor_progress = BanditNames.GPTS_Learner.name
                                           )
 
     simulationHandler.run_simulation()

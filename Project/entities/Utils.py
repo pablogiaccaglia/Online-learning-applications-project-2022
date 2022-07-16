@@ -1,5 +1,6 @@
 import os
 import random
+from enum import Enum
 from random import randint
 from time import sleep
 from typing import Union
@@ -199,3 +200,12 @@ def get_colors():
     return colors.copy()
 
 
+class BanditNames(Enum):
+
+    CusumGPUCB1Learner = 'CUSUM-GP-UCB1'
+    CusumGTSLearner = 'CUSUM-GTS'
+    GPTS_Learner = 'GP-TS'
+    GPUCB1_Learner = 'GP-UCB1'
+    GTS_Learner = 'GTS'
+    SwGPUCB1_Learner = 'SW-GP-UCB1'
+    SwGTSLearner = 'SW-GTS'
