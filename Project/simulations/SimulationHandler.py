@@ -65,6 +65,7 @@ class SimulationHandler:
         self.step_k = step_k
         self.plot_regressor_progress = plot_regressor_progress
         self.save_results_to_file = save_results_to_file
+        self.uniform_allocation_profits = []
 
         self.boost_start = boost_start
         self.boost_discount = boost_discount
@@ -142,6 +143,7 @@ class SimulationHandler:
 
             self.learners_rewards_per_day = [[] for _ in range(len(self.learners))]
 
+            # -- Day Loop --
             for day in tqdm(range(self.days)):
 
                 if self.is_unknown_graph:
@@ -181,6 +183,18 @@ class SimulationHandler:
                     """print("Estimated Graph setted")"""
                     self.environment.set_user_graphs(
                             self.estimated_fully_conn_graphs)  # set real real_graphs for clavoyrant algorithm
+
+                # --- uniform allocation benchmark ----
+
+                uniform_allocation = [self.daily_budget / 5 for _ in range(5)]
+                sim_obj_2 = self.environment.replicate_last_day(uniform_allocation,
+                                                                self.n_users,
+                                                                self.reference_price,
+                                                                self.bool_n_noise,
+                                                                self.bool_n_noise)
+                self.uniform_allocation_profits.append(np.sum(sim_obj_2["learner_rewards"]))
+
+                # ------
 
                 for learnerIdx, learner in enumerate(self.learners):
                     # update with data from today for tomorrow
