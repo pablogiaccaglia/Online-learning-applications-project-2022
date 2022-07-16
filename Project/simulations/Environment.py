@@ -151,25 +151,35 @@ class Environment:
                                                                 step_size=step_k,
                                                                 n_budgets=n_budget_k)
 
+        agg_rewards, _ = self.__rewards_knapsack_aggregated(n_users,
+                                                            reference_price,
+                                                            noise_alpha,
+                                                            exp_number_noise=exp_number_noise,
+                                                            step_size=step_k,
+                                                            n_budgets=n_budget_k)
         # AGGREGATED
-        contexts = [[1, 1, 1, 1]]
+        """contexts = [[1, 1, 1, 1]]
+        avail_budgets = np.array(avail_budgets)
         ordered_rewards = []
-        for offset in [0, 1, 2, 3]:  # order rewards from groups by users to groups by campaign
+        # order rewards from groups by users to groups by campaign
+        for offset in [0, 1, 2, 3]:
             for i_campaign in range(5):
-                ordered_rewards.append(rewards[offset + 4 * i_campaign])
+                pure_reward = np.array(rewards[offset + 4 * i_campaign]) + avail_budgets
+                ordered_rewards.append(pure_reward * self.all_prob_users[offset])
         ordered_rewards = np.array_split(ordered_rewards, 4)
         agg_ordered_rewards = []
         for _mask in contexts:  # aggregate knapsack rewards according to actual context
             tmp = np.array(ordered_rewards[0]) * 0
-            bool_discount_cost = False
             for i_bit, bit in enumerate(_mask):
                 if bit == 1:
                     tmp += ordered_rewards[i_bit]
             agg_ordered_rewards.append(tmp)
         agg_ordered_rewards = np.array(agg_ordered_rewards[0])
+        for r in agg_ordered_rewards:
+            r -= avail_budgets"""
 
         row_label_rewards, row_labels_dp_table, col_labels = util.table_metadata(5, 1, avail_budgets)
-        K = Knapsack(rewards=agg_ordered_rewards, budgets=np.array(avail_budgets))
+        K = Knapsack(rewards=agg_rewards, budgets=np.array(avail_budgets))
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
         K.solve()
         arg_max = np.argmax(K.get_output()[0][-1])
@@ -193,7 +203,7 @@ class Environment:
             "k_budgets": avail_budgets,
             "noise": (noise_alpha, exp_number_noise),
             "reward_k_disagg": reward_k_disagg,
-            "rewards_agg": agg_ordered_rewards,
+            "rewards_agg": agg_rewards,
             "rewards_disagg": rewards,
             "reward_k_agg": reward_k_agg,
             "alloc_agg": (alloc_agg, np.sum(alloc_agg)),
@@ -221,12 +231,14 @@ class Environment:
                                                          n_users=n_users,
                                                          reference_price=reference_price)
         # aggregate them according to the given context
-        learner_rewards = self.assemble_profit(profit_blocks, ctx, flatten=True)
+        gross_rewards = self.assemble_profit(profit_blocks, ctx, flatten=True)
+        learner_rewards = gross_rewards - np.array(super_arm)
 
         return {
-            "learner_rewards": learner_rewards - np.array(super_arm),
+            "learner_rewards": learner_rewards,
+            "gross_rewards": gross_rewards,
             "noise": (noise_alpha, exp_number_noise),
-            "profit": np.sum(learner_rewards - np.array(super_arm)),
+            "profit": np.sum(learner_rewards),
         }
 
     def get_core_entities(self):
@@ -276,7 +288,6 @@ class Environment:
             result += scaled_mask @ b
 
         return result  # matrix of scaled budgets
-
 
     def __set_campaign_budgets(self, budget_array):
         for i, cmp in enumerate(self.campaigns):
@@ -345,6 +356,34 @@ class Environment:
         self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget
 
+    def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5,
+                                      n_budgets=10):
+        """Return knapsack rewards for fully aggregated user classes"""
+        old_budget = self.allocated_budget
+        prob_users = self.all_prob_users[1:]
+        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
+        n_campaigns = len(self.products)
+        rewards = []
+        for _ in range(n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
+
+        for cmp_index in range(n_campaigns):
+            for budget_idx in range(n_budgets):
+                for user_idx, user in enumerate(self.users):
+                    self.campaigns[cmp_index].change_budget(available_budget[budget_idx] * prob_users[
+                        user_idx])  # scale allocated budget by probability of user
+                    alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
+                            noise_alpha[user_idx][cmp_index]
+                    value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
+                    expected_gross_profit = self.prob_users[
+                                                user_idx] * alpha * value_per_click * n_users * reference_price
+                    multiplier = 2 if user_idx == 0 else 1
+                    rewards[cmp_index][budget_idx] += np.single(expected_gross_profit) * multiplier
+
+        self.__set_campaign_budgets(old_budget)  # restore old budget
+        return rewards, available_budget
+
     def __profit_campaign_per_user(self, user_index, n_users, reference_price):
         """ Not scaled user probability profit for a campaign with forced budget of caller"""
         noise_alpha = self.noise_alpha
@@ -382,12 +421,12 @@ class Environment:
             self.__set_user_graph(i, graph)
 
     def run_graph_estimate(self,
-                           numOfEpisodes = 100,
-                           simulations = 100,
-                           delta = 0.2,  # higher delta, fewer simulations
-                           epsilon = 0.1,
-                           seeds = 1,
-                           silent = True):
+                           numOfEpisodes=100,
+                           simulations=100,
+                           delta=0.2,  # higher delta, fewer simulations
+                           epsilon=0.1,
+                           seeds=1,
+                           silent=True):
         true_result_history = []
         estimation_fully_con = []
         estimation_2_neigh = []
@@ -397,10 +436,10 @@ class Environment:
             adjacency_matrix = np.array(user.weighted_graph.get_adjacency_matrix())
             n_campaigns = len(self.campaigns)
 
-            estimatedProbs = OfflineWeightsLearner.estimateProbabilities(numOfEpisodes = numOfEpisodes,
-                                                                         targetNodes = [i for i in range(n_campaigns)],
-                                                                         numberOfNodes = n_campaigns,
-                                                                         probabilitiesMatrix = adjacency_matrix)
+            estimatedProbs = OfflineWeightsLearner.estimateProbabilities(numOfEpisodes=numOfEpisodes,
+                                                                         targetNodes=[i for i in range(n_campaigns)],
+                                                                         numberOfNodes=n_campaigns,
+                                                                         probabilitiesMatrix=adjacency_matrix)
 
             if not silent:
                 print("\n-" * 10 + " Weights estimation - OFFLINE - fully connected graph " + "-" * 10)
@@ -421,9 +460,9 @@ class Environment:
             if not silent:
                 print("\nmonte carlo simulations: " + str(monte_carlo_repetitions))
             plt.close()
-            estimatedGraph = OnlineWeightsLearner.estimate_weights(true_graph = user.weighted_graph,
-                                                                   simulations = simulations,
-                                                                   monte_carlo_repetitions = monte_carlo_repetitions)
+            estimatedGraph = OnlineWeightsLearner.estimate_weights(true_graph=user.weighted_graph,
+                                                                   simulations=simulations,
+                                                                   monte_carlo_repetitions=monte_carlo_repetitions)
             estimation_fully_con.append(estimatedGraph)
             if not silent:
                 print("\nTrue Probability Matrix: \n",
@@ -446,10 +485,10 @@ class Environment:
                 print("\nmonte carlo simulations: " + str(monte_carlo_repetitions))
             plt.close()
 
-            ecommerceGraph = util.get_ecommerce_graph(products = self.products)
-            estimatedGraph = OnlineWeightsLearner.estimate_weights(true_graph = ecommerceGraph,
-                                                                   simulations = simulations,
-                                                                   monte_carlo_repetitions = monte_carlo_repetitions)
+            ecommerceGraph = util.get_ecommerce_graph(products=self.products)
+            estimatedGraph = OnlineWeightsLearner.estimate_weights(true_graph=ecommerceGraph,
+                                                                   simulations=simulations,
+                                                                   monte_carlo_repetitions=monte_carlo_repetitions)
             estimation_2_neigh.append(estimatedGraph)
             true_result_history.append(ecommerceGraph)
             if not silent:
