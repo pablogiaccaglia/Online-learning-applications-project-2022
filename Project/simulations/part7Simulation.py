@@ -52,7 +52,7 @@ budgets_array = np.array([
 ]) * 50
 
 context_on = False
-target_feature = [True, True]  # start fully aggregated
+target_feature = [False, False]  # start fully aggregated
 stop_context = False
 context_initialized = False
 swap = 1    # set 0 or 1 do decide order of features
@@ -364,9 +364,11 @@ for day in progressbar.progressbar(range(days)):
         super_arm = base_learner.pull_super_arm()
         # random init
         if day < random_init_days:
-            idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=False)
+            idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=True)
+            loops = 0
             while np.sum(np.array(base_learner.arms)[idx]) >= daily_budget:
-                idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=False)
+                idx = np.random.choice(len(base_learner.arms) - 1 - loops, 5 * len(contexts), replace=True)
+                loops += 1
             super_arm = np.array(base_learner.arms)[idx]
 
         reward_plot(active=True)
