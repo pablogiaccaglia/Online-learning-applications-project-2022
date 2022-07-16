@@ -681,17 +681,15 @@ class SimulationHandler:
                         color = colors_learners[learnerIdx]
                 )
 
-            if self.find_learner_idx(util.BanditNames.GPTS_Learner.name) >= 0:
+            """if self.find_learner_idx(util.BanditNames.GPTS_Learner.name) >= 0:
                 regret_upper_bound = []
                 for i in range(self.days + 1):
                     regret_upper_bound.append(util.regret_upper_bound_gp_ts(t = i,
                                                                             arms = self.n_arms,
                                                                             sets = self.campaigns,
-                                                                            input_dimension = 1, K = 60))
+                                                                            input_dimension = 1, K = 40))
 
                 axs[3].plot(regret_upper_bound, colors[0], alpha = opacity, label = "GP-TS Regret Bound")
-
-
 
             idx = self.find_learner_idx(util.BanditNames.GTS_Learner.name)
             if idx > -1:
@@ -705,8 +703,8 @@ class SimulationHandler:
                                                                  arms = self.n_arms,
                                                                  sets = self.campaigns,
                                                                  delta_min = delta, K = 30)
-                axs[3].axhline(regret_upper_bound, color = colors[0], alpha = opacity, label = "GP-TS Regret Bound")
-
+                axs[3].axhline(regret_upper_bound, color = colors[0], alpha = opacity, label = "GTS Regret Bound")
+"""
             axs[3].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                           ncol = 2, mode = "expand", borderaxespad = 0.)
             axs[2].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,

@@ -29,11 +29,11 @@ if __name__ == '__main__':
 
     """ @@@@ ---------------- @@@@ """
 
-    """gpts_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget,
+    gpts_learner = CombWrapper(GPTS_Learner, 5, n_arms, daily_budget,
                                is_ucb=False,
                                is_gaussian=True)
 
-    gpucb1_learner = CombWrapper(GPUCB1_Learner,
+    """gpucb1_learner = CombWrapper(GPUCB1_Learner,
                                  5,
                                  n_arms,
                                  daily_budget,
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                               is_ucb = False,
                               is_gaussian = True)
 
-    learners = [gts_learner]
+    learners = [gpts_learner]
 
     simulationHandler = SimulationHandler(environmentConstructor=Environment,
                                           learners=learners,
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                                           boost_start=boost_start,
                                           boost_bias=boost_bias,
                                           boost_discount=boost_discount,
-                                          plot_regressor_progress= BanditNames.GTS_Learner.name
+                                          plot_regressor_progress= None
                                           )
 
     simulationHandler.run_simulation()

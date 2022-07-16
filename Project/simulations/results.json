@@ -1,22 +1,22 @@
 {
     "clairvoyantAggregated": {
-        "avgTotalProfit": 11096.5,
-        "avgTotalProfitStd": 3.5,
-        "avgProfitPerDay": 369.8833333333333,
-        "avgProfitPerDayStd": 48.54451279209858,
+        "avgTotalProfit": 8416.0,
+        "avgTotalProfitStd": 160.55295076702888,
+        "avgProfitPerDay": 280.53333333333336,
+        "avgProfitPerDayStd": 44.38560827815951,
         "avgTotalRegret": 0.0,
         "avgTotalRegretStd": 0.0,
         "avgRegretPerDay": 0.0,
         "avgRegretPerDayStd": 0.0
     },
-    "GP-TS": {
-        "avgTotalProfit": 6842.476583014168,
-        "avgTotalProfitStd": 605.9905002734304,
-        "avgProfitPerDay": 228.082552767139,
-        "avgProfitPerDayStd": 80.01591880318075,
-        "avgTotalRegret": 4254.023416985832,
-        "avgTotalRegretStd": 609.4905002734308,
-        "avgRegretPerDay": 141.80078056619433,
-        "avgRegretPerDayStd": 70.69457347937953
+    "GPTS_Learner": {
+        "avgTotalProfit": 4579.7834301155635,
+        "avgTotalProfitStd": 940.2383171185573,
+        "avgProfitPerDay": 152.65944767051886,
+        "avgProfitPerDayStd": 111.69874781650243,
+        "avgTotalRegret": 3836.2165698844356,
+        "avgTotalRegretStd": 811.9488571540586,
+        "avgRegretPerDay": 127.87388566281452,
+        "avgRegretPerDayStd": 109.60734154898236
     }
 }
