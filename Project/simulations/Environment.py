@@ -74,9 +74,9 @@ class Environment:
         res_prices_2 = [0.60, 0.525, 0.85, 0.775, 1.10]
         res_prices_3 = [0.60, 0.725, 0.85, 0.975, 1.10]
 
-        exp_number_purchase_1 = [2.0, 2.0, 2.0, 2.0, 3.5]  # 2   - 3.5
-        exp_number_purchase_2 = [1.0, 1.0, 1.0, 1.0, 1.5]  # 1   - 1.5
-        exp_number_purchase_3 = [1.5, 1.5, 1.5, 1.5, 2.0]  # 1.5 - 2
+        exp_number_purchase_1 = [2.5, 3, 2.0, 2.5, 2.0]  # 2   - 3.5
+        exp_number_purchase_2 = [1.5, 1.5, 1.1, 1.2, 1.3]  # 1   - 1.5
+        exp_number_purchase_3 = [2, 1.6, 1.8, 2.0, 1.5]  # 1.5 - 2
 
         graph1 = util.random_fully_connected_graph(self.products)
         graph2 = util.random_fully_connected_graph(self.products)
