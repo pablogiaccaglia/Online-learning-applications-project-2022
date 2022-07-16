@@ -1,4 +1,4 @@
-from GPUCB1_Learner import GPUCB1_Learner
+from learners.GPUCB1_Learner import GPUCB1_Learner
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
 

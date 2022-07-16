@@ -1,5 +1,4 @@
 from copy import deepcopy
-
 import numpy as np
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
