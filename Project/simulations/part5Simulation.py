@@ -57,7 +57,8 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_discount = boost_discount,
                                           boost_bias = boost_bias,
-                                          plot_regressor_progress = BanditNames.GPTS_Learner.name
+                                          plot_regressor_progress = BanditNames.GPTS_Learner.name,
+                                          simulation_name='Part5Simulation'
                                           )
 
     simulationHandler.run_simulation()

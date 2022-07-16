@@ -66,7 +66,8 @@ if __name__ == '__main__':
                                           boost_start=boost_start,
                                           boost_bias=boost_bias,
                                           boost_discount=boost_discount,
-                                          plot_regressor_progress= None
+                                          plot_regressor_progress= None,
+                                          simulation_name='Part3Simulation'
                                           )
 
     simulationHandler.run_simulation()

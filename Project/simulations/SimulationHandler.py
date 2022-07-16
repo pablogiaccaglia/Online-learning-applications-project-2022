@@ -1,3 +1,4 @@
+import os
 import copy
 import seaborn as sns
 from typing import Type
@@ -38,7 +39,8 @@ class SimulationHandler:
                  boost_discount: float = 0.5,
                  boost_bias: float = -1.0,
                  plot_regressor_progress = None,
-                 save_results_to_file = True):
+                 save_results_to_file = True,
+                 simulation_name: str= 'simulation'):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -80,6 +82,9 @@ class SimulationHandler:
         campaigns = 15 if self.clairvoyant_type == 'disaggregated' else 5  # to generalize !!
         self.boost_bias = boost_bias if boost_bias >= 0.0 else self.daily_budget / campaigns
 
+        self.simulation_name = simulation_name
+        self.figsize = (13,6)
+
         if non_stationary_args and isinstance(non_stationary_args, dict):
             self.phase_size = non_stationary_args['phase_size']
             self.num_users_phases = non_stationary_args['num_users_phases']
@@ -117,7 +122,7 @@ class SimulationHandler:
             self.clairvoyant_rewards_per_experiment_t2 = []
 
         if self.plot_regressor_progress:
-            img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
+            img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = self.figsize)
             axs = axss.flatten()
             plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.9, wspace = 0.4, bottom = 0.1)
 
@@ -532,10 +537,6 @@ class SimulationHandler:
                     f"average regret per day standard deviation:\t {varsDict[util.retrieve_name(avgRegretPerDayStd)]:.4f}€")
             print()
 
-        if self.save_results_to_file:
-            with open('results.json', 'w') as f:
-                json.dump(results, f, ensure_ascii = False, indent = 4)
-
         plt.close('all')
 
         sns.set_context(context = sns_context)
@@ -552,10 +553,10 @@ class SimulationHandler:
         colors_learners = [colors.pop() for _ in range(len(self.learners))]
 
         if len(self.learners) > 0:
-            img, axss = plt.subplots(nrows = 2, ncols = 2, figsize = (13, 6))
+            img, axss = plt.subplots(nrows = 2, ncols = 2, figsize = self.figsize)
             plt.subplots_adjust(hspace = hspace, top = 0.8, wspace = wspace)
         else:
-            img, axss = plt.subplots(nrows = 1, ncols = 2, figsize = (13, 6))
+            img, axss = plt.subplots(nrows = 1, ncols = 2, figsize = self.figsize)
 
         axs = axss.flatten()
 
@@ -747,3 +748,9 @@ class SimulationHandler:
             axs[2].set_title('Regret', y = 1.0, pad = pad)
 
         plt.show()
+        os.chdir("../results")
+        if self.save_results_to_file:
+            with open(f'{self.simulation_name}.json', 'w') as f:
+                json.dump(results, f, ensure_ascii = False, indent = 4)
+        f.close()
+        plt.savefig(f'{self.simulation_name}.png')
