@@ -221,13 +221,17 @@ class Environment:
         else:
             ctx = contexts
         # adapt budget from super arm to the 4 class of users
+        # OK TESTED
         budgets_array = self.budget_array_from_superarm(super_arm, ctx)
         # generate 4 profit blocks one per user
+        # OK TESTED
         profit_blocks = self.get_context_building_blocks(budgets_array=budgets_array,
                                                          n_users=n_users,
                                                          reference_price=reference_price)
         # aggregate them according to the given context
+        # OK TESTED
         gross_rewards = self.assemble_profit(profit_blocks, ctx, flatten=True)
+        gross_rewards2 = self.assemble_profit(profit_blocks, ctx)
         learner_rewards = gross_rewards - np.array(super_arm)
 
         return {
@@ -421,10 +425,8 @@ class Environment:
         exp_number_noise = self.exp_number_noise
         campaign_profits = []
         u = self.users[user_index]
-        old_budget = self.allocated_budget  # save old budget
 
         for i, cmp in enumerate(self.campaigns):
-            # cmp.change_budget(old_budget[i])  # not need to scale by user prob the budget
 
             noise_a = noise_alpha[user_index][i]  # noise over (i,j)
             alpha_f_res = cmp.get_alpha_i(u.alpha_functions[i])  # effect of budget over campaign (alpha function)
@@ -438,8 +440,6 @@ class Environment:
         for i, cmp_profit in enumerate(campaign_profits):
             euro_val = cmp_profit * n_users * reference_price
             campaign_profits[i] = euro_val
-
-        self.__set_campaign_budgets(old_budget)  # restore old budget
 
         return campaign_profits
 

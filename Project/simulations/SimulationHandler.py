@@ -185,6 +185,17 @@ class SimulationHandler:
                 for learnerIdx, learner in enumerate(self.learners):
                     # update with data from today for tomorrow
                     super_arm = self.super_arms[learnerIdx]
+
+                    # BOOST (Random exploration) DONE ONLY TO LEARNERS USING GP REGRESSOR
+                    if self.boost_start and learner.needs_boost and day < 4:
+                        idx = np.random.choice(len(learner.arms) - 1, 5, replace=True)
+                        loop = 0
+                        while np.sum(np.array(learner.arms)[idx]) >= self.daily_budget:
+                            idx = np.random.choice(len(learner.arms) - 1 - loop, 5, replace=True)
+                            loop += 1
+                        # force random exploration
+                        super_arm = np.array(learner.arms)[idx]
+
                     sim_obj_2 = self.environment.replicate_last_day(super_arm,
                                                                     self.n_users,
                                                                     self.reference_price,
@@ -193,23 +204,12 @@ class SimulationHandler:
                     profit_env = sim_obj_2["profit"]
                     learner_rewards = sim_obj_2["learner_rewards"]
                     net_profit_learner = np.sum(learner_rewards)
+                    learner.update_observations(super_arm, learner_rewards)
 
-                    self.learners_rewards_per_day[learnerIdx].append(net_profit_learner)
-                    profit_list = list(learner_rewards)
-
-                    # BOOST DONE ONLY TO LEARNERS USING GP REGRESSOR
-                    if self.boost_start and learner.needs_boost and day <= 4:
-                        for i, s_arm in enumerate(super_arm):
-                            if s_arm == 0:
-                                # if a learner is pulling 0 give an high reward in an higher arm
-                                back_offset = np.random.randint(1, 4)
-                                forced_arm = np.sort(super_arm, axis = None)[-back_offset]  # take random high arm value
-                                profit_list[i] = np.max(profit_list) * self.boost_discount + self.boost_bias
-                                super_arm[i] = forced_arm
-
-                    learner.update_observations(super_arm, profit_list)
                     # solve comb problem for tomorrow
                     self.super_arms[learnerIdx] = learner.pull_super_arm()
+
+                    self.learners_rewards_per_day[learnerIdx].append(net_profit_learner)
 
                 if self.plot_regressor_progress and learner_to_observe:
                     axs[5].cla()
