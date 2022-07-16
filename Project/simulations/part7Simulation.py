@@ -31,14 +31,16 @@ environment = Environment()
 if daily_budget < arm_distance * n_arms:
     raise ValueError("Invalid Configuration for daily budget")
 
-bool_alpha_noise = False
-bool_n_noise = False
+bool_alpha_noise = True
+bool_n_noise = True
 printBasicDebug = False
 printKnapsackInfo = False
 
 # ******* Context initialization ********
+breakpoint_1 = 40
+breakpoint_2 = 100
 context_gen_days = 40
-interval = 2  # how often to run context gen.
+random_init_days = 5
 rewards_clairvoyant = []
 base_learner_rewards = []
 ctx_learner_rewards = []
@@ -54,7 +56,11 @@ context_on = False
 target_feature = [False, False]  # start fully aggregated
 stop_context = False
 context_initialized = False
+swap = 1    # set 0 or 1 do decide order of features
 target_feature_i = 0
+
+c0_reward = []
+ctx_reward = []
 
 ctx_algorithm = GPTS_Learner
 # ctx_algorithm = GTS_Learner
@@ -105,6 +111,11 @@ def budget_array_from_k_alloc_4(_alloc, flatten=False):
     return tmp
 
 
+def hoeffding_bound(samples, confidence=0.80):
+    x = np.mean(samples)
+    return x - np.sqrt(-1 * np.log(confidence) / (2 * len(samples)))
+
+
 """ Istantiate the new learner using a copy of the old trained comb lerner"""
 """def instantiate_new_learner(comb_learner, _contexts, _new_contexts, _ctx_algorithm, _n_campaigns_ctx, _n_arms,
                             _daily_budget):
@@ -125,6 +136,7 @@ def budget_array_from_k_alloc_4(_alloc, flatten=False):
     learner.learners = np.array(new_learners).flatten()
 
     return learner"""
+
 
 def instantiate_new_learner(comb_learner, _contexts, _new_contexts, _ctx_algorithm, _n_campaigns_ctx, _n_arms,
                             _daily_budget):
@@ -204,7 +216,7 @@ def alpha_plot(comb_learner, active=True):
 
 
 # initialize base learner target and shape
-contexts = context_masks(split_family=target_feature[0], split_student=target_feature[1])
+contexts = context_masks(split_family=target_feature[0+swap], split_student=target_feature[1-swap])
 size_ctx = len(contexts)
 start_offset = 0
 n_campaigns_ctx = 5 * size_ctx
@@ -228,14 +240,14 @@ for day in progressbar.progressbar(range(days)):
     # AGGREGATED
     rewards_knapsack_agg.append(sim_obj["reward_k_agg"])
     alloc, tot = sim_obj["alloc_agg"]
-    print(f"\nAlloc {alloc} tot {tot}")
+    # print(f"\nAlloc {alloc} tot {tot}")
 
     # DISAGGREGATED
     rewards_clairvoyant.append(sim_obj["reward_k_disagg"])
     alloc, tot = sim_obj["alloc_disagg"]
     # print(f"Alloc {alloc} tot {tot}")
 
-    if day == 30 or day == 100:
+    if day == breakpoint_1 or day == breakpoint_2:
         if target_feature_i <= 1:
             context_on = True
             last_superarm = super_arm  # save arm of possible old learner
@@ -246,7 +258,7 @@ for day in progressbar.progressbar(range(days)):
 
     if context_on:
         # generate contexts list of context masks
-        new_contexts = context_masks(split_family=target_feature[0], split_student=target_feature[1])
+        new_contexts = context_masks(split_family=target_feature[0+swap], split_student=target_feature[1-swap])
         size_ctx = len(new_contexts)
 
         if not context_initialized:
@@ -279,11 +291,17 @@ for day in progressbar.progressbar(range(days)):
         # collect net profit of learner
         ctx_learner_rewards.append(net_profit_learner)
         base_learner_rewards.append(net_profit_learner)
+        ctx_reward.append(net_profit_learner)
 
         # pull super arm for tomorrow
         super_arm = ctx_learner.pull_super_arm()
-        if day < 35 or 100 <= day < 105:
-            idx = np.random.choice(len(base_learner.arms)-1, 5 * len(contexts), replace=False)
+        # random init
+        if day < breakpoint_1 + random_init_days or breakpoint_2 <= day < breakpoint_2 + random_init_days:
+            idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=True)
+            loops = 3 * len(contexts)
+            while np.sum(np.array(base_learner.arms)[idx]) >= daily_budget:
+                idx = np.random.choice(len(base_learner.arms) - 1 - loops, 5 * len(contexts), replace=True)
+                loops += 1
             super_arm = np.array(base_learner.arms)[idx]
 
         if day == start_day + context_gen_days:
@@ -292,7 +310,21 @@ for day in progressbar.progressbar(range(days)):
             start_offset = start_day + context_gen_days
             context_on = False
             context_initialized = False
-            split_condition = True  # todo: develop here tecnique for splitting + context management
+
+            confidence = 0.8
+            b1 = hoeffding_bound(c0_reward, confidence=confidence)
+            b2 = hoeffding_bound(ctx_reward, confidence=confidence)
+            if b1 > b2:
+                print(f"The split is NOT worth {b1} > {b2} \tconfidence={confidence}")
+                split_condition = False
+            else:
+                print(f"The split is  worth {b1} < {b2} \tconfidence={confidence}")
+                split_condition = True
+            c0_reward = []
+            ctx_reward = []
+
+            split_condition = True  # Force split to see all splits
+
             if split_condition:
                 base_learner = ctx_learner
             else:
@@ -314,25 +346,18 @@ for day in progressbar.progressbar(range(days)):
         net_profit_learner = np.sum(learner_rewards)
         base_learner.update_observations(super_arm, learner_rewards)
         base_learner_rewards.append(net_profit_learner)
+        c0_reward.append(net_profit_learner)
 
-        print(f"l {super_arm} {np.sum(learner_rewards)}")
+        # print(f"l {super_arm} {np.sum(learner_rewards)}")
 
-        """if day < 5:
-            mid_budget = daily_budget / 5 - arm_distance
-            arm_forced_i = base_learner.arms[-1]
-            for arm in base_learner.arms:
-                if arm >= mid_budget:
-                    arm_forced_i = arm
-                    break
-
-            for i, s in enumerate(super_arm):
-                super_arm[i] = arm_forced_i"""
-        if day < 10:
-            idx = np.random.choice(len(base_learner.arms)-1, 5 * len(contexts), replace=False)
+        # pull super arm for tomorrow
+        super_arm = base_learner.pull_super_arm()
+        # random init
+        if day < random_init_days:
+            idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=False)
+            while np.sum(np.array(base_learner.arms)[idx]) >= daily_budget:
+                idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=False)
             super_arm = np.array(base_learner.arms)[idx]
-        else:
-            # pull super arm for tomorrow
-            super_arm = base_learner.pull_super_arm()
 
         reward_plot(active=True)
         alpha_plot(base_learner)
