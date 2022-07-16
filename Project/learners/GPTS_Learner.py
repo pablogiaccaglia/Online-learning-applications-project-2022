@@ -20,8 +20,8 @@ class GPTS_Learner(Learner):
         self.needs_boost = True
 
         alpha = 0.5
-        theta = 300  # regulates how wide the uncertainty area is (control exploration)
-        l = 30  # regulate how close 2 points should be to be similar
+        theta = 1  # regulates how wide the uncertainty area is (control exploration)
+        l = 100  # regulate how close 2 points should be to be similar
         kernel = C(theta, (1e-3, 1e3)) * RBF(l, (1e-3, 1e3))  # to be adjusted
         self.kernel = kernel
         self.alpha = alpha

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
@@ -17,11 +19,11 @@ import progressbar
 +---------+---------+--------+
 """
 days = 400
-N_user = 350  # reference for what alpha = 1 refers to
+N_user = 400  # reference for what alpha = 1 refers to
 reference_price = 3.0
 daily_budget = 50 * 5
 n_arms = 20
-arm_distance = 5
+arm_distance = 10
 step_k = 5
 n_budget = int(daily_budget / step_k)
 environment = Environment()
@@ -33,13 +35,6 @@ bool_alpha_noise = False
 bool_n_noise = False
 printBasicDebug = False
 printKnapsackInfo = False
-
-# distribute uniformely user1 worker and user1 split_student
-p_usr1_s = environment.prob_users[0] * 0.5
-p_usr1_w = environment.prob_users[0] * 0.5
-p_usr2 = environment.prob_users[1]
-p_usr3 = environment.prob_users[2]
-p_users = [p_usr1_s, p_usr1_w, p_usr2, p_usr3]
 
 # ******* Context initialization ********
 context_gen_days = 40
@@ -160,9 +155,14 @@ def reward_plot(active=True):
 def alpha_plot(comb_learner, active=True):
     if active:
         ordered_rewards = []
-        rewards = sim_obj["rewards_disagg"]
+        if len(contexts) == 1:
+            rewards = sim_obj["rewards_agg"]
+        if len(contexts) == 4:
+            rewards = sim_obj["rewards_disagg"]
+        if len(contexts) == 2:
+            rewards = sim_obj["rewards_mix"]
 
-        for offset in [0, 1, 2, 3]:  # order rewards from groups by users to groups by campaign
+        """for offset in [0, 1, 2, 3]:  # order rewards from groups by users to groups by campaign
             for i_campaign in range(5):
                 ordered_rewards.append(rewards[offset + 4 * i_campaign])
         ordered_rewards = np.array_split(ordered_rewards, 4)
@@ -174,10 +174,10 @@ def alpha_plot(comb_learner, active=True):
             for i_bit, bit in enumerate(_mask):
                 if bit == 1:
                     tmp += ordered_rewards[i_bit]
-            agg_ordered_rewards.append(tmp)
+            agg_ordered_rewards.append(tmp)"""
 
         _axs = axs  # target axs
-        rewards_plot = np.array(agg_ordered_rewards).reshape(-1, len(sim_obj["k_budgets"]))
+        rewards_plot = np.array(rewards).reshape(-1, len(sim_obj["k_budgets"]))
         if day % 20 == 0:
             for i, rw in enumerate(rewards_plot):
                 _axs[i].cla()
@@ -223,15 +223,19 @@ boost_bias = daily_budget / 20  # ensure a positive reward when all pull 0
 for day in progressbar.progressbar(range(days)):
     users, products, campaigns, allocated_budget, prob_users, _ = environment.get_core_entities()
     sim_obj = environment.play_one_day(N_user, reference_price, daily_budget, step_k, bool_alpha_noise,
-                                       bool_n_noise)  # object with all the day info
+                                       bool_n_noise, contexts=contexts)  # object with all the day info
 
     # AGGREGATED
     rewards_knapsack_agg.append(sim_obj["reward_k_agg"])
+    alloc, tot = sim_obj["alloc_agg"]
+    print(f"\nAlloc {alloc} tot {tot}")
 
     # DISAGGREGATED
     rewards_clairvoyant.append(sim_obj["reward_k_disagg"])
+    alloc, tot = sim_obj["alloc_disagg"]
+    # print(f"Alloc {alloc} tot {tot}")
 
-    if day == 40 or day == 100:
+    if day == 30 or day == 100:
         if target_feature_i <= 1:
             context_on = True
             last_superarm = super_arm  # save arm of possible old learner
@@ -278,6 +282,9 @@ for day in progressbar.progressbar(range(days)):
 
         # pull super arm for tomorrow
         super_arm = ctx_learner.pull_super_arm()
+        if day < 35 or 100 <= day < 105:
+            idx = np.random.choice(len(base_learner.arms)-1, 5 * len(contexts), replace=False)
+            super_arm = np.array(base_learner.arms)[idx]
 
         if day == start_day + context_gen_days:
             # stop generator
@@ -308,8 +315,24 @@ for day in progressbar.progressbar(range(days)):
         base_learner.update_observations(super_arm, learner_rewards)
         base_learner_rewards.append(net_profit_learner)
 
-        # pull super arm for tomorrow
-        super_arm = base_learner.pull_super_arm()
+        print(f"l {super_arm} {np.sum(learner_rewards)}")
+
+        """if day < 5:
+            mid_budget = daily_budget / 5 - arm_distance
+            arm_forced_i = base_learner.arms[-1]
+            for arm in base_learner.arms:
+                if arm >= mid_budget:
+                    arm_forced_i = arm
+                    break
+
+            for i, s in enumerate(super_arm):
+                super_arm[i] = arm_forced_i"""
+        if day < 10:
+            idx = np.random.choice(len(base_learner.arms)-1, 5 * len(contexts), replace=False)
+            super_arm = np.array(base_learner.arms)[idx]
+        else:
+            # pull super arm for tomorrow
+            super_arm = base_learner.pull_super_arm()
 
         reward_plot(active=True)
         alpha_plot(base_learner)

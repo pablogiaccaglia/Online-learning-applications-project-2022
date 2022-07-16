@@ -127,7 +127,8 @@ class Environment:
         self.noise_alpha = []
         self.exp_number_noise = []
 
-    def play_one_day(self, n_users, reference_price, daily_budget, step_k=2, alpha_noise=False, n_noise=False):
+    def play_one_day(self, n_users, reference_price, daily_budget, step_k=2, alpha_noise=False, n_noise=False,
+                     contexts=None):
         # generate noisy contractions matrix for alpha functions and exp number of purchase
         if alpha_noise:
             self.noise_alpha = util.noise_matrix_alpha()
@@ -143,41 +144,35 @@ class Environment:
 
         n_budget_k = int(daily_budget / step_k)  # adapt columns number for knapsack
 
+        agg_rewards, avail_budgets = self.__rewards_knapsack_aggregated(n_users,
+                                                                        reference_price,
+                                                                        noise_alpha,
+                                                                        exp_number_noise=exp_number_noise,
+                                                                        step_size=step_k,
+                                                                        n_budgets=n_budget_k)
+
         # knapsack disaggregated for 4 users
-        rewards, avail_budgets = self.__rewards_knapsack_4_user(n_users,
-                                                                reference_price,
-                                                                noise_alpha,
-                                                                exp_number_noise=exp_number_noise,
-                                                                step_size=step_k,
-                                                                n_budgets=n_budget_k)
+        rewards, _ = self.__rewards_knapsack_4_user(n_users,
+                                                    reference_price,
+                                                    noise_alpha,
+                                                    exp_number_noise=exp_number_noise,
+                                                    step_size=step_k,
+                                                    n_budgets=n_budget_k)
+        rewards2 = []
+        if contexts is not None and len(contexts) == 2:
+            for mask in contexts:
+                tmp_r, b = self.__rewards_knapsack_pseudo_aggregated(mask,
+                                                                     n_users,
+                                                                     reference_price,
+                                                                     noise_alpha,
+                                                                     exp_number_noise=exp_number_noise,
+                                                                     step_size=step_k,
+                                                                     n_budgets=n_budget_k)
+                rewards2.append(tmp_r)
+            size = len(rewards2[0][0])
+            rewards2 = np.array(rewards2).reshape((-1, size))
 
-        agg_rewards, _ = self.__rewards_knapsack_aggregated(n_users,
-                                                            reference_price,
-                                                            noise_alpha,
-                                                            exp_number_noise=exp_number_noise,
-                                                            step_size=step_k,
-                                                            n_budgets=n_budget_k)
         # AGGREGATED
-        """contexts = [[1, 1, 1, 1]]
-        avail_budgets = np.array(avail_budgets)
-        ordered_rewards = []
-        # order rewards from groups by users to groups by campaign
-        for offset in [0, 1, 2, 3]:
-            for i_campaign in range(5):
-                pure_reward = np.array(rewards[offset + 4 * i_campaign]) + avail_budgets
-                ordered_rewards.append(pure_reward * self.all_prob_users[offset])
-        ordered_rewards = np.array_split(ordered_rewards, 4)
-        agg_ordered_rewards = []
-        for _mask in contexts:  # aggregate knapsack rewards according to actual context
-            tmp = np.array(ordered_rewards[0]) * 0
-            for i_bit, bit in enumerate(_mask):
-                if bit == 1:
-                    tmp += ordered_rewards[i_bit]
-            agg_ordered_rewards.append(tmp)
-        agg_ordered_rewards = np.array(agg_ordered_rewards[0])
-        for r in agg_ordered_rewards:
-            r -= avail_budgets"""
-
         row_label_rewards, row_labels_dp_table, col_labels = util.table_metadata(5, 1, avail_budgets)
         K = Knapsack(rewards=agg_rewards, budgets=np.array(avail_budgets))
         K.init_for_pretty_print(row_labels=row_labels_dp_table, col_labels=col_labels)
@@ -205,6 +200,7 @@ class Environment:
             "reward_k_disagg": reward_k_disagg,
             "rewards_agg": agg_rewards,
             "rewards_disagg": rewards,
+            "rewards_mix": rewards2,
             "reward_k_agg": reward_k_agg,
             "alloc_agg": (alloc_agg, np.sum(alloc_agg)),
             "alloc_disagg": (alloc_disagg, np.sum(alloc_disagg))
@@ -357,7 +353,7 @@ class Environment:
         return rewards, available_budget
 
     def __rewards_knapsack_aggregated(self, n_users, reference_price, noise_alpha, exp_number_noise, step_size=5,
-                                      n_budgets=10):
+                                      n_budgets=10, mask=None):
         """Return knapsack rewards for fully aggregated user classes"""
         old_budget = self.allocated_budget
         prob_users = self.all_prob_users[1:]
@@ -380,6 +376,41 @@ class Environment:
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     multiplier = 2 if user_idx == 0 else 1
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit) * multiplier
+
+        self.__set_campaign_budgets(old_budget)  # restore old budget
+        return rewards, available_budget
+
+    def __rewards_knapsack_pseudo_aggregated(self, mask, n_users, reference_price, noise_alpha, exp_number_noise,
+                                             step_size=5,
+                                             n_budgets=10):
+        """Return knapsack rewards for fully aggregated user classes"""
+        noise_alpha = [noise_alpha[0]] + self.noise_alpha
+        exp_number_noise = [exp_number_noise[0]] + self.exp_number_noise
+        old_budget = self.allocated_budget
+        prob_users = [0, 0, 0, 0]
+        users = [self.users[0]] + self.users
+        for i, bit in enumerate(mask):
+            if bit == 1:
+                prob_users[i] = self.all_prob_users[i]
+        available_budget = [step_size * (i + 1) for i in range(n_budgets)]
+        n_campaigns = len(self.products)
+        rewards = []
+        for _ in range(n_campaigns):
+            rewards.append(-1 * np.array(available_budget.copy()))
+        rewards = np.array(rewards)
+
+        for cmp_index in range(n_campaigns):
+            for budget_idx in range(n_budgets):
+                for user_idx, user in enumerate(users):
+                    if prob_users[user_idx] != 0:
+                        self.campaigns[cmp_index].change_budget(float(available_budget[budget_idx]) * prob_users[
+                            user_idx] / float(sum(prob_users)))  # scale allocated budget by probability of user
+                        alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
+                                noise_alpha[user_idx][cmp_index]
+                        value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
+                        expected_gross_profit = prob_users[
+                                                    user_idx] * alpha * value_per_click * n_users * reference_price
+                        rewards[cmp_index][budget_idx] += np.single(expected_gross_profit)
 
         self.__set_campaign_budgets(old_budget)  # restore old budget
         return rewards, available_budget

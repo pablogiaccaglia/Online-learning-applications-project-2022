@@ -70,7 +70,6 @@ class CombWrapper:
             knapsack_r = np.array(all_samples)  # don't remove allocation cost, let learner work with estimated profits
             rewards.append(knapsack_r)
 
-        budgets = np.array(self.arms)
 
         # add padding for investments up to max budget, needed by knapsack algorithm
         budgets = np.array(self.arms)
@@ -80,7 +79,11 @@ class CombWrapper:
         padding_budgets = np.arange(start, stop, step)
         budgets = np.concatenate([budgets, padding_budgets])
 
-        padding_reward = -1 * np.ones((len(self.learners), len(padding_budgets)))
+        """for r in rewards:
+            _min = np.min(r)
+            if _min < 0:
+                r += _min*-1"""
+        padding_reward = 0 * np.ones((len(self.learners), len(padding_budgets)))
         rewards = np.concatenate([np.array(rewards), padding_reward], axis=1)
 
         k = Knapsack(rewards=np.array(rewards), budgets=budgets)
@@ -112,6 +115,7 @@ class CombWrapper:
         self.last_knapsack_reward = rewards
         # best allocation possible after combinatorial optimization problem
         super_arms = alloc[1:]
+
 
         if len(super_arms) > 5:
             # reshape superarms in case of multi campaign knapsack
