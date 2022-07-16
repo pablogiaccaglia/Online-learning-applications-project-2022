@@ -205,7 +205,16 @@ class SimulationHandler:
                                 profit_list[i] = np.max(profit_list) * self.boost_discount + self.boost_bias
                                 super_arm[i] = forced_arm
 
-                    learner.update_observations(super_arm, profit_list)
+                    # BOOST (Random exploration) DONE ONLY TO LEARNERS USING GP REGRESSOR
+                    if self.boost_start and learner.needs_boost and day < 4:
+                        idx = np.random.choice(len(learner.arms) - 1, 5, replace=True)
+                        loop = 0
+                        while np.sum(np.array(learner.arms)[idx]) >= self.daily_budget:
+                            idx = np.random.choice(len(learner.arms) - 1 - loop, 5, replace=True)
+                            loop += 1
+                        # force random exploration
+                        self.super_arms[learnerIdx] = np.array(learner.arms)[idx]
+
                     # solve comb problem for tomorrow
                     self.super_arms[learnerIdx] = learner.pull_super_arm()
 
