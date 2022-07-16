@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from learners.CombWrapper import CombWrapper
 from tqdm import tqdm
 import matplotlib
-
+import json
 from simulations.Environment import Environment
 
 matplotlib.use("TkAgg")
@@ -607,10 +607,12 @@ class SimulationHandler:
 
         # REALLY BAD CODE HERE !!!!!!
 
-        if len(self.learners) > 1:
-            pad = 45
+        if len(self.learners) > 2:
+            pad = 79
+        elif len(self.learners) > 1:
+            pad = 58
         elif len(self.learners) > 0:
-            pad = 28
+            pad = 43
         else:
             pad = 36
 
@@ -619,7 +621,9 @@ class SimulationHandler:
 
         if len(self.learners) > 0:
             if len(self.learners) > 2:
-                pad = 46
+                pad = 65
+            elif len(self.learners) > 1:
+                pad = 45
             elif len(self.learners) > 0:
                 pad = 28
 
