@@ -45,10 +45,18 @@ class SimulationHandler:
         self.learners_rewards_per_experiment = [[] for _ in range(len(self.learners))]
         self.learners_rewards_per_day = [[] for _ in range(len(self.learners))]
         self.super_arms = []
+
         self.clairvoyant_rewards_per_experiment_t1 = []
         self.clairvoyant_rewards_per_experiment_t2 = []
         self.clairvoyant_rewards_per_day_t1 = []
         self.clairvoyant_rewards_per_day_t2 = []
+
+        self.avg_clairvoyant_profit_functions_t1 = []
+        self.avg_clairvoyant_profit_functions_t2 = []
+
+        self.buds = []
+        self.campaigns = len(self.learners[0].learners)
+
         self.days = days
         self.experiments = experiments
         self.reference_price = reference_price
@@ -90,10 +98,20 @@ class SimulationHandler:
         for i, b in enumerate(budgets):
             self.environment.set_campaign_budget(i, b)
 
+    def find_learner_idx(self, name) -> int:
+        for idx, l in enumerate(self.learners):
+            if l.bandit_name == name:
+                return idx
+        return -1
+
     def run_simulation(self):
 
         self.learners_rewards_per_experiment = [[] for _ in range(len(self.learners))]
         self.clairvoyant_rewards_per_experiment_t1 = []
+
+        self.avg_clairvoyant_profit_functions_t1 = [[] for _ in range(5)]
+        self.avg_clairvoyant_profit_functions_t2 = [[] for _ in range(5)]
+        self.learner_profit_functions_per_experiment = [[[] for _ in range(5)] for _ in range(len(self.learners))]
 
         if self.clairvoyant_type == 'both':
             self.clairvoyant_rewards_per_experiment_t2 = []
@@ -169,14 +187,42 @@ class SimulationHandler:
                     # AGGREGATED
                     self.clairvoyant_rewards_per_day_t1.append(sim_obj["reward_k_agg"])
 
+                    for idx, r in enumerate(sim_obj["rewards_agg"]):
+
+                        if len(self.avg_clairvoyant_profit_functions_t1[r]) == 0:
+                            self.avg_clairvoyant_profit_functions_t1[idx].append(r)
+                        else:
+                            self.avg_clairvoyant_profit_functions_t1[idx] = (self.avg_clairvoyant_profit_functions_t1[
+                                                                                 idx] * day + r) / (day + 1)
+
                     # DISAGGREGATED
                     self.clairvoyant_rewards_per_day_t2.append(sim_obj["reward_k_disagg"])
 
-                else:
-                    reward = sim_obj["reward_k_agg"] if self.clairvoyant_type == 'aggregated' else sim_obj[
-                        "reward_k_disagg"]
-                    self.clairvoyant_rewards_per_day_t1.append(reward)
+                    for idx, r in enumerate(sim_obj["rewards_disagg"]):
 
+                        if len(self.avg_clairvoyant_profit_functions_t2[idx]) == 0:
+                            self.avg_clairvoyant_profit_functions_t2[idx].append(r)
+                        else:
+
+                            self.avg_clairvoyant_profit_functions_t2[idx] = (self.avg_clairvoyant_profit_functions_t2[
+                                                                                 idx] * day + r) / (day + 1)
+
+                else:
+                    reward_k = sim_obj["reward_k_agg"] if self.clairvoyant_type == 'aggregated' else sim_obj[
+                        "reward_k_disagg"]
+                    self.clairvoyant_rewards_per_day_t1.append(reward_k)
+
+                    reward = sim_obj["rewards_agg"] if self.clairvoyant_type == 'aggregated' else sim_obj[
+                        "rewards_disagg"]
+
+                    for idx, r in enumerate(reward):
+                        if len(self.avg_clairvoyant_profit_functions_t1[idx]) == 0:
+                            self.avg_clairvoyant_profit_functions_t1[idx].append(r)
+                        else:
+
+                            self.avg_clairvoyant_profit_functions_t1[idx] = (self.avg_clairvoyant_profit_functions_t1[
+                                                                                 idx] * day + r) / (
+                                                                                    day + 1)
                 # -----------------------------------------------------------------
 
                 if self.is_unknown_graph:
@@ -202,10 +248,10 @@ class SimulationHandler:
 
                     # BOOST (Random exploration) DONE ONLY TO LEARNERS USING GP REGRESSOR
                     if self.boost_start and learner.needs_boost and day < 4:
-                        idx = np.random.choice(len(learner.arms) - 1, 5, replace=True)
+                        idx = np.random.choice(len(learner.arms) - 1, 5, replace = True)
                         loop = 0
                         while np.sum(np.array(learner.arms)[idx]) >= self.daily_budget:
-                            idx = np.random.choice(len(learner.arms) - 1 - loop, 5, replace=True)
+                            idx = np.random.choice(len(learner.arms) - 1 - loop, 5, replace = True)
                             loop += 1
                         # force random exploration
                         super_arm = np.array(learner.arms)[idx]
@@ -224,6 +270,21 @@ class SimulationHandler:
                     self.super_arms[learnerIdx] = learner.pull_super_arm()
 
                     self.learners_rewards_per_day[learnerIdx].append(net_profit_learner)
+
+                    self.buds = sim_obj["k_budgets"]
+
+                    mean, std = learner.get_gp_data()
+
+                    for i, m in enumerate(mean):
+
+                        if len(self.learner_profit_functions_per_experiment[learnerIdx][i]) == 0:
+                            self.learner_profit_functions_per_experiment[learnerIdx][i].append(m)
+                        else:
+                            self.learner_profit_functions_per_experiment[learnerIdx][i] = (
+                                                                                                  self.learner_profit_functions_per_experiment[
+                                                                                                      learnerIdx][
+                                                                                                      i] * day + m) / (
+                                                                                                  day + 1)
 
                 if self.plot_regressor_progress and learner_to_observe:
                     axs[5].cla()
@@ -280,6 +341,23 @@ class SimulationHandler:
         # self.__plot_results(sns_style = 'white') # looks nice
 
         # self.__plot_results(sns_style = 'black') # looks nice but i do not it like that much
+
+        """img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
+        axs = axss.flatten()
+        plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.9, wspace = 0.4, bottom = 0.1)
+
+        for i, rw in enumerate(self.avg_clairvoyant_profit_functions_t1):
+            x = self.buds
+            axs[i].set_xlabel("budget")
+            axs[i].set_ylabel("profit")
+            axs[i].plot(x, rw[0], colors[-1], label = 'clairvoyant profit', alpha = 0.5)
+
+            x2 = self.learners[0].arms
+            mean = self.learner_profit_functions_per_experiment[0][i]
+            axs[i].plot(x2, mean[0], colors[i], label = 'estimated profit', alpha = 0.5)
+
+        plt.show()"""
+
         self.__plot_results(sns_style = 'matplotlib')  # uses default matplotlib style
 
     # TODO A PLOT HANDLER SHOULD DO ALL THE WORK HERE !
@@ -567,8 +645,8 @@ class SimulationHandler:
                             colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
 
                 std = np.std(
-                    np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
-                              axis = 1), axis = 0)
+                        np.cumsum(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                                  axis = 1), axis = 0)
 
                 mean = np.cumsum(
                         np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
@@ -602,6 +680,32 @@ class SimulationHandler:
                         label = r"95% confidence interval",
                         color = colors_learners[learnerIdx]
                 )
+
+            if self.find_learner_idx(util.BanditNames.GPTS_Learner.name) >= 0:
+                regret_upper_bound = []
+                for i in range(self.days + 1):
+                    regret_upper_bound.append(util.regret_upper_bound_gp_ts(t = i,
+                                                                            arms = self.n_arms,
+                                                                            sets = self.campaigns,
+                                                                            input_dimension = 1, K = 60))
+
+                axs[3].plot(regret_upper_bound, colors[0], alpha = opacity, label = "GP-TS Regret Bound")
+
+
+
+            idx = self.find_learner_idx(util.BanditNames.GTS_Learner.name)
+            if idx > -1:
+                delta = util.compute_delta(self.learners[idx].arms,
+                                           self.learner_profit_functions_per_experiment[0],
+                                           self.buds,
+                                           self.avg_clairvoyant_profit_functions_t1,
+                                           self.campaigns)
+
+                regret_upper_bound = util.regret_upper_bound_gts(t = self.days,
+                                                                 arms = self.n_arms,
+                                                                 sets = self.campaigns,
+                                                                 delta_min = delta, K = 30)
+                axs[3].axhline(regret_upper_bound, color = colors[0], alpha = opacity, label = "GP-TS Regret Bound")
 
             axs[3].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                           ncol = 2, mode = "expand", borderaxespad = 0.)
