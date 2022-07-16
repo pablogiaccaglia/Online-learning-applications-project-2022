@@ -5,7 +5,9 @@ from learners.GPTS_Learner import GPTS_Learner
 from simulations.Environment import Environment
 import matplotlib.pyplot as plt
 import progressbar
+import matplotlib
 
+matplotlib.use("TkAgg")
 """ @@@@ simulation SETUP @@@@ """
 
 """
@@ -17,7 +19,7 @@ import progressbar
 |         |         |        |
 +---------+---------+--------+
 """
-days = 400
+days = 20
 N_user = 400  # reference for what alpha = 1 refers to
 reference_price = 3.0
 daily_budget = 50 * 5
