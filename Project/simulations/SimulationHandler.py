@@ -805,6 +805,190 @@ class SimulationHandler:
         plt.savefig(f'{self.simulation_name}.pdf')
         plt.show()
 
+        if not self.plot_confidence_intervals:
+
+            for learnerIdx, learner in enumerate(self.learners):
+                plt.close('all')
+                sns.set_context(context = sns_context)
+                if sns_style != 'matplotlib':
+                    sns.set_style(style = sns_style)
+
+                if set_ticks:
+                    sns.set_style("ticks")
+
+                d = np.linspace(0, self.days, self.days)
+
+                colors = util.get_colors()
+
+                colors_learners = [colors.pop() for _ in range(len(self.learners))]
+
+                if len(self.learners) > 0:
+                    img, axss = plt.subplots(nrows = 2, ncols = 2, figsize = self.figsize)
+                    plt.subplots_adjust(hspace = hspace, top = 0.8, wspace = wspace)
+                else:
+                    img, axss = plt.subplots(nrows = 1, ncols = 2, figsize = self.figsize)
+
+                axs = axss.flatten()
+
+                axs[0].set_xlabel("days")
+                axs[0].set_ylabel("reward")
+
+                if self.clairvoyant_type != 'both':
+                    axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
+                                label = "clairvoyant", alpha = opacity)
+
+                else:
+                    axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
+                                label = "clairvoyant aggregated", alpha = opacity)
+                    axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0), colors[-2],
+                                label = "clairvoyant disaggregated", alpha = opacity)
+
+                axs[1].set_xlabel("days")
+                axs[1].set_ylabel("cumulative reward")
+
+                bandit_name = self.learners[learnerIdx].bandit_name
+                axs[0].plot(d, np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0),
+                            colors_learners[learnerIdx],
+                            label = bandit_name, alpha = opacity)
+
+                mean = np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)
+                std = np.std(learners_rewards_per_experiment[learnerIdx],
+                             axis = 0)
+
+                axs[0].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
+
+                if self.clairvoyant_type != 'both':
+                    axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
+                                label = "clairvoyant", alpha = opacity)
+
+                else:
+                    axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
+                                label = "clairvoyant aggregated", alpha = opacity)
+                    axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t2, axis = 0)), colors[-2],
+                                label = "clairvoyant disaggegated", alpha = opacity)
+
+                bandit_name = self.learners[learnerIdx].bandit_name
+                axs[1].plot(d, np.cumsum(np.mean(learners_rewards_per_experiment[learnerIdx], axis = 0)),
+                            colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
+
+                std = np.std(
+                        np.cumsum(learners_rewards_per_experiment[learnerIdx],
+                                  axis = 1), axis = 0)
+
+                mean = np.cumsum(
+                        np.mean(learners_rewards_per_experiment[learnerIdx],
+                                axis = 0))
+
+                axs[1].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
+
+                axs[0].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                              ncol = 2, mode = "expand", borderaxespad = 0.)
+                axs[1].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                              ncol = 2, mode = "expand", borderaxespad = 0.)
+
+                if len(self.learners) > 0:
+                    axs[3].set_xlabel("days")
+                    axs[3].set_ylabel("cumulative regret")
+
+                    axs[2].set_xlabel("days")
+                    axs[2].set_ylabel("regret")
+
+                    bandit_name = self.learners[learnerIdx].bandit_name
+                    axs[3].plot(d, np.cumsum(
+                            np.mean(
+                                    clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                                    axis = 0)),
+                                colors_learners[learnerIdx], label = bandit_name, alpha = opacity)
+
+                    std = np.std(
+                            np.cumsum(
+                                    clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                                    axis = 1), axis = 0)
+
+                    mean = np.cumsum(
+                            np.mean(
+                                    clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                                    axis = 0))
+
+                    axs[3].fill_between(
+                            np.array(d).ravel(),
+                            mean - 1.96 * std,
+                            mean + 1.96 * std,
+                            alpha = 0.1,
+                            label = r"95% confidence interval",
+                            color = colors_learners[learnerIdx]
+                    )
+
+                    bandit_name = self.learners[learnerIdx].bandit_name
+                    axs[2].plot(d,
+                                np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[
+                                    learnerIdx],
+                                        axis = 0), colors_learners[learnerIdx], label = bandit_name,
+                                alpha = opacity)
+
+                    mean = np.mean(
+                            clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                            axis = 0)
+                    std = np.std(
+                            clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
+                            axis = 0)
+
+                    axs[2].fill_between(
+                            np.array(d).ravel(),
+                            mean - 1.96 * std,
+                            mean + 1.96 * std,
+                            alpha = 0.1,
+                            label = r"95% confidence interval",
+                            color = colors_learners[learnerIdx]
+                    )
+
+                    axs[3].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                                  ncol = 2, mode = "expand", borderaxespad = 0.)
+                    axs[2].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                                  ncol = 2, mode = "expand", borderaxespad = 0.)
+
+                if remove_splines:
+                    if offset_axes:
+                        for ax in axs:
+                            sns.despine(ax = ax, offset = 5, trim = False)
+                    else:
+                        sns.despine()
+
+                if enable_grid:
+                    for ax in axs:
+                        ax.grid(alpha = 0.2)
+
+                # REALLY BAD CODE HERE !!!!!!
+
+                pad = 43
+
+                axs[0].set_title('Reward', y = 1.0, pad = pad)
+                axs[1].set_title('Cumulative Reward', y = 1.0, pad = pad)
+
+                pad = 28
+                axs[3].set_title('Cumulative Regret', y = 1.0, pad = pad)
+                axs[2].set_title('Regret', y = 1.0, pad = pad)
+
+                mng = plt.get_current_fig_manager()
+                mng.resize(*mng.window.maxsize())
+
+                plt.savefig(f'{self.simulation_name + learner.bandit_name}.pdf')
+                plt.show()
+
         if self.save_results_to_file:
             with open(f'{self.simulation_name}.json', 'w') as f:
                 json.dump(results, f, ensure_ascii = False, indent = 4)
