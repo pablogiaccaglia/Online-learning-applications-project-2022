@@ -31,6 +31,7 @@ class SimulationHandler:
                  bool_n_noise: bool,
                  print_basic_debug: bool,
                  print_knapsack_info: bool,
+                 campaigns: int,
                  step_k: int,
                  non_stationary_args: dict = None,
                  is_unknown_graph: bool = False,
@@ -59,7 +60,7 @@ class SimulationHandler:
         self.avg_clairvoyant_profit_functions_t2 = []
 
         self.buds = []
-        self.campaigns = len(self.learners[0].learners)
+        self.campaigns = campaigns
 
         self.days = days
         self.experiments = experiments
@@ -86,7 +87,7 @@ class SimulationHandler:
 
         self.boost_start = boost_start
         self.boost_discount = boost_discount
-        campaigns = 15 if self.clairvoyant_type == 'disaggregated' else 5  # to generalize !!
+        campaigns = campaigns * self.n_users if self.clairvoyant_type == 'disaggregated' else campaigns  # to generalize !!
         self.boost_bias = boost_bias if boost_bias >= 0.0 else self.daily_budget / campaigns
 
         self.simulation_name = simulation_name
@@ -115,10 +116,14 @@ class SimulationHandler:
         self.learners_rewards_per_experiment = [[] for _ in range(len(self.learners))]
         self.clairvoyant_rewards_per_experiment_t1 = []
 
-        self.avg_clairvoyant_profit_functions_t1 = [[] for _ in range(5)]
-        self.avg_clairvoyant_profit_functions_t2 = [[] for _ in range(5)]
-        self.learner_profit_functions_per_experiment = [[[] for _ in range(5)] for _ in range(len(self.learners))]
-        self.learner_profit_functions_per_experiment_std = [[[] for _ in range(5)] for _ in range(len(self.learners))]
+        self.avg_clairvoyant_profit_functions_t1 = [[] for _ in range(self.campaigns)]
+        self.avg_clairvoyant_profit_functions_t2 = [[] for _ in range(self.campaigns * self.n_users)]
+
+        if self.clairvoyant_type == 'disaggregated':
+            self.avg_clairvoyant_profit_functions_t1 = [[] for _ in range(self.campaigns * self.n_users)]
+
+        self.learner_profit_functions_per_experiment = [[[] for _ in range(self.campaigns)] for _ in range(len(self.learners))]
+        self.learner_profit_functions_per_experiment_std = [[[] for _ in range(self.campaigns)] for _ in range(len(self.learners))]
 
         if self.clairvoyant_type == 'both':
             self.clairvoyant_rewards_per_experiment_t2 = []
@@ -203,8 +208,7 @@ class SimulationHandler:
                     self.clairvoyant_rewards_per_day_t1.append(sim_obj["reward_k_agg"])
 
                     for idx, r in enumerate(sim_obj["rewards_agg"]):
-
-                        if len(self.avg_clairvoyant_profit_functions_t1[r]) == 0:
+                        if len(self.avg_clairvoyant_profit_functions_t1[idx]) == 0:
                             self.avg_clairvoyant_profit_functions_t1[idx].append(r)
                         else:
                             self.avg_clairvoyant_profit_functions_t1[idx] = (self.avg_clairvoyant_profit_functions_t1[
@@ -214,7 +218,6 @@ class SimulationHandler:
                     self.clairvoyant_rewards_per_day_t2.append(sim_obj["reward_k_disagg"])
 
                     for idx, r in enumerate(sim_obj["rewards_disagg"]):
-
                         if len(self.avg_clairvoyant_profit_functions_t2[idx]) == 0:
                             self.avg_clairvoyant_profit_functions_t2[idx].append(r)
                         else:
@@ -408,7 +411,7 @@ class SimulationHandler:
 
                     axs[i].set_title('Profit curve - Campaign ' + str(i + 1), y = 1.0, pad = 43)
 
-                plt.savefig(f'{self.simulation_name + self.learners[id].bandit_name + "Plots"}.pdf')
+                plt.savefig(f'{self.simulation_name + self.learners[id].bandit_name + "ProfitPlots"}.pdf')
                 plt.show()
 
         self.__plot_results(sns_style = 'matplotlib')  # uses default matplotlib style
@@ -613,7 +616,7 @@ class SimulationHandler:
 
         if self.clairvoyant_type != 'both':
             axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
-                        label = "clairvoyant", alpha = opacity)
+                        label = "clairvoyant " + self.clairvoyant_type, alpha = opacity)
 
         else:
             axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
@@ -645,7 +648,7 @@ class SimulationHandler:
 
         if self.clairvoyant_type != 'both':
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
-                        label = "clairvoyant", alpha = opacity)
+                        label = "clairvoyant " + self.clairvoyant_type, alpha = opacity)
 
         else:
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
@@ -802,7 +805,7 @@ class SimulationHandler:
         mng = plt.get_current_fig_manager()
         mng.resize(*mng.window.maxsize())
 
-        plt.savefig(f'{self.simulation_name}.pdf')
+        plt.savefig(f'{self.simulation_name + "PerformancePlot"}.pdf')
         plt.show()
 
         if not self.plot_confidence_intervals:
@@ -835,7 +838,7 @@ class SimulationHandler:
 
                 if self.clairvoyant_type != 'both':
                     axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
-                                label = "clairvoyant", alpha = opacity)
+                                label = "clairvoyant " + self.clairvoyant_type , alpha = opacity)
 
                 else:
                     axs[0].plot(d, np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0), colors[-1],
@@ -866,7 +869,7 @@ class SimulationHandler:
 
                 if self.clairvoyant_type != 'both':
                     axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
-                                label = "clairvoyant", alpha = opacity)
+                                label = "clairvoyant " + self.clairvoyant_type, alpha = opacity)
 
                 else:
                     axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
@@ -986,7 +989,7 @@ class SimulationHandler:
                 mng = plt.get_current_fig_manager()
                 mng.resize(*mng.window.maxsize())
 
-                plt.savefig(f'{self.simulation_name + learner.bandit_name}.pdf')
+                plt.savefig(f'{self.simulation_name + learner.bandit_name + "PerformancePlot"}.pdf')
                 plt.show()
 
         if self.save_results_to_file:

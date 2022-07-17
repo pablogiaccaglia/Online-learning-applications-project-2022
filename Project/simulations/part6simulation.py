@@ -118,6 +118,7 @@ if __name__ == '__main__':
                                           daily_budget = daily_budget,
                                           n_users = N_user,
                                           n_arms = n_arms,
+                                          campaigns = 5,
                                           bool_alpha_noise = bool_alpha_noise,
                                           bool_n_noise = bool_n_noise,
                                           print_basic_debug = printBasicDebug,
@@ -130,7 +131,8 @@ if __name__ == '__main__':
                                           boost_discount = boost_discount,
                                           plot_regressor_progress = None,
                                           simulation_name='Part6Simulation',
-                                          learner_profit_plot = None
+                                          learner_profit_plot = None,
+                                          plot_confidence_intervals = False
                                           )
 
     simulationHandler.run_simulation()

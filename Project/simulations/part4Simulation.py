@@ -8,7 +8,7 @@ from entities.Utils import BanditNames
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
-    days = 30
+    days = 3
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -38,6 +38,7 @@ if __name__ == '__main__':
                                           reference_price = reference_price,
                                           daily_budget = daily_budget,
                                           n_users = N_user,
+                                          campaigns = 5,
                                           n_arms = n_arms,
                                           bool_alpha_noise = bool_alpha_noise,
                                           bool_n_noise = bool_n_noise,
@@ -50,7 +51,8 @@ if __name__ == '__main__':
                                           boost_discount = boost_discount,
                                           plot_regressor_progress = BanditNames.GPTS_Learner.name,
                                           simulation_name='Part4Simulation',
-                                          learner_profit_plot = BanditNames.GPTS_Learner.name
+                                          learner_profit_plot = BanditNames.GPTS_Learner.name,
+                                          plot_confidence_intervals = False
                                           )
 
     simulationHandler.run_simulation()

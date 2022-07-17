@@ -48,6 +48,7 @@ if __name__ == '__main__':
                                           daily_budget = daily_budget,
                                           n_users = N_user,
                                           n_arms = n_arms,
+                                          campaigns = 5,
                                           bool_alpha_noise = bool_alpha_noise,
                                           bool_n_noise = bool_n_noise,
                                           print_basic_debug = printBasicDebug,

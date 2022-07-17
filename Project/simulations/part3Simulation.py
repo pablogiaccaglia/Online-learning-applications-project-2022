@@ -53,6 +53,7 @@ if __name__ == '__main__':
                                           learners=learners,
                                           experiments=experiments,
                                           days=days,
+                                          campaigns = 5,
                                           reference_price=reference_price,
                                           daily_budget=daily_budget,
                                           n_users=N_user,
@@ -68,7 +69,8 @@ if __name__ == '__main__':
                                           boost_discount=boost_discount,
                                           plot_regressor_progress= None,
                                           simulation_name='Part3Simulation',
-                                          learner_profit_plot = BanditNames.GPTS_Learner.name
+                                          learner_profit_plot = BanditNames.GPTS_Learner.name,
+                                          plot_confidence_intervals = False
                                           )
 
     simulationHandler.run_simulation()
