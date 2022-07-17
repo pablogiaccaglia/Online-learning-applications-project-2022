@@ -40,7 +40,9 @@ class SimulationHandler:
                  boost_bias: float = -1.0,
                  plot_regressor_progress = None,
                  save_results_to_file = True,
-                 simulation_name: str = 'simulation'):
+                 simulation_name: str = 'simulation',
+                 learner_profit_plot = None,
+                 plot_confidence_intervals = True):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -75,6 +77,11 @@ class SimulationHandler:
         self.step_k = step_k
         self.plot_regressor_progress = plot_regressor_progress
         self.save_results_to_file = save_results_to_file
+        self.plot_confidence_intervals = plot_confidence_intervals
+
+        if save_results_to_file:
+            os.chdir("../results")
+
         self.uniform_allocation_profits = []
 
         self.boost_start = boost_start
@@ -84,6 +91,7 @@ class SimulationHandler:
 
         self.simulation_name = simulation_name
         self.figsize = (16, 10)
+        self.learner_profit_plot = learner_profit_plot
 
         if non_stationary_args and isinstance(non_stationary_args, dict):
             self.phase_size = non_stationary_args['phase_size']
@@ -96,9 +104,10 @@ class SimulationHandler:
             self.environment.set_campaign_budget(i, b)
 
     def find_learner_idx(self, name) -> int:
-        for idx, l in enumerate(self.learners):
-            if l.bandit_name == name:
-                return idx
+        if isinstance(name, str):
+            for idx, l in enumerate(self.learners):
+                if l.bandit_name == name:
+                    return idx
         return -1
 
     def run_simulation(self):
@@ -109,6 +118,7 @@ class SimulationHandler:
         self.avg_clairvoyant_profit_functions_t1 = [[] for _ in range(5)]
         self.avg_clairvoyant_profit_functions_t2 = [[] for _ in range(5)]
         self.learner_profit_functions_per_experiment = [[[] for _ in range(5)] for _ in range(len(self.learners))]
+        self.learner_profit_functions_per_experiment_std = [[[] for _ in range(5)] for _ in range(len(self.learners))]
 
         if self.clairvoyant_type == 'both':
             self.clairvoyant_rewards_per_experiment_t2 = []
@@ -284,12 +294,20 @@ class SimulationHandler:
 
                         if len(self.learner_profit_functions_per_experiment[learnerIdx][i]) == 0:
                             self.learner_profit_functions_per_experiment[learnerIdx][i].append(m)
+                            self.learner_profit_functions_per_experiment_std[learnerIdx][i].append(std[i])
                         else:
                             self.learner_profit_functions_per_experiment[learnerIdx][i] = (
                                                                                                   self.learner_profit_functions_per_experiment[
                                                                                                       learnerIdx][
                                                                                                       i] * day + m) / (
                                                                                                   day + 1)
+
+                            self.learner_profit_functions_per_experiment_std[learnerIdx][i] = (
+                                                                                                      self.learner_profit_functions_per_experiment_std[
+                                                                                                          learnerIdx][
+                                                                                                          i] * day +
+                                                                                                      std[i]) / (
+                                                                                                      day + 1)
 
                 if self.plot_regressor_progress and learner_to_observe:
                     axs[5].cla()
@@ -347,21 +365,51 @@ class SimulationHandler:
 
         # self.__plot_results(sns_style = 'black') # looks nice but i do not it like that much
 
-        """img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (13, 6))
-        axs = axss.flatten()
-        plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.9, wspace = 0.4, bottom = 0.1)
+        if self.learner_profit_plot:
 
-        for i, rw in enumerate(self.avg_clairvoyant_profit_functions_t1):
-            x = self.buds
-            axs[i].set_xlabel("budget")
-            axs[i].set_ylabel("profit")
-            axs[i].plot(x, rw[0], colors[-1], label = 'clairvoyant profit', alpha = 0.5)
+            id = self.find_learner_idx(self.learner_profit_plot)
 
-            x2 = self.learners[0].arms
-            mean = self.learner_profit_functions_per_experiment[0][i]
-            axs[i].plot(x2, mean[0], colors[i], label = 'estimated profit', alpha = 0.5)
+            if id >= 0:
+                colors = util.get_colors(type = 2)
 
-        plt.show()"""
+                img, axss = plt.subplots(nrows = 2, ncols = 3, figsize = (20, 15))
+                img.suptitle(self.learners[id].bandit_name + " profit curve")
+                axs = axss.flatten()
+                plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.85, wspace = 0.4, bottom = 0.1)
+
+                for ax in axs:
+                    ax.grid(alpha = 0.2)
+                    sns.despine(ax = ax, offset = 5, trim = False)
+
+                sns.set_style("ticks")
+                sns.set_context('notebook')
+
+                for i, rw in enumerate(self.avg_clairvoyant_profit_functions_t1):
+                    x = self.buds
+                    axs[i].set_xlabel("budget")
+                    axs[i].set_ylabel("profit")
+                    axs[i].plot(x, rw[0], colors.pop(), label = 'clairvoyant profit', alpha = 0.5)
+                    x2 = self.learners[id].arms
+                    mean = self.learner_profit_functions_per_experiment[id][i][0]
+                    std = self.learner_profit_functions_per_experiment_std[id][i][0]
+                    c = colors.pop()
+                    axs[i].plot(x2, mean, c, label = 'estimated profit', alpha = 0.5)
+
+                    axs[i].fill_between(
+                            np.array(x2).ravel(),
+                            mean - 1.96 * std,
+                            mean + 1.96 * std,
+                            alpha = 0.1,
+                            label = r"95% confidence interval",
+                            color = c
+                    )
+                    axs[i].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
+                                  ncol = 2, mode = "expand", borderaxespad = 0.)
+
+                    axs[i].set_title('Profit curve - Campaign ' + str(i + 1), y = 1.0, pad = 43)
+
+                plt.savefig(f'{self.simulation_name + self.learners[id].bandit_name + "Plots"}.pdf')
+                plt.show()
 
         self.__plot_results(sns_style = 'matplotlib')  # uses default matplotlib style
 
@@ -585,14 +633,15 @@ class SimulationHandler:
             std = np.std(learners_rewards_per_experiment[learnerIdx],
                          axis = 0)
 
-            axs[0].fill_between(
-                    np.array(d).ravel(),
-                    mean - 1.96 * std,
-                    mean + 1.96 * std,
-                    alpha = 0.1,
-                    label = r"95% confidence interval",
-                    color = colors_learners[learnerIdx]
-            )
+            if self.plot_confidence_intervals:
+                axs[0].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
 
         if self.clairvoyant_type != 'both':
             axs[1].plot(d, np.cumsum(np.mean(clairvoyant_rewards_per_experiment_t1, axis = 0)), colors[-1],
@@ -617,14 +666,15 @@ class SimulationHandler:
                     np.mean(learners_rewards_per_experiment[learnerIdx],
                             axis = 0))
 
-            axs[1].fill_between(
-                    np.array(d).ravel(),
-                    mean - 1.96 * std,
-                    mean + 1.96 * std,
-                    alpha = 0.1,
-                    label = r"95% confidence interval",
-                    color = colors_learners[learnerIdx]
-            )
+            if self.plot_confidence_intervals:
+                axs[1].fill_between(
+                        np.array(d).ravel(),
+                        mean - 1.96 * std,
+                        mean + 1.96 * std,
+                        alpha = 0.1,
+                        label = r"95% confidence interval",
+                        color = colors_learners[learnerIdx]
+                )
 
         axs[0].legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3,
                       ncol = 2, mode = "expand", borderaxespad = 0.)
@@ -653,14 +703,15 @@ class SimulationHandler:
                         np.mean(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                                 axis = 0))
 
-                axs[3].fill_between(
-                        np.array(d).ravel(),
-                        mean - 1.96 * std,
-                        mean + 1.96 * std,
-                        alpha = 0.1,
-                        label = r"95% confidence interval",
-                        color = colors_learners[learnerIdx]
-                )
+                if self.plot_confidence_intervals:
+                    axs[3].fill_between(
+                            np.array(d).ravel(),
+                            mean - 1.96 * std,
+                            mean + 1.96 * std,
+                            alpha = 0.1,
+                            label = r"95% confidence interval",
+                            color = colors_learners[learnerIdx]
+                    )
 
             for learnerIdx in range(len(self.learners)):
                 bandit_name = self.learners[learnerIdx].bandit_name
@@ -673,14 +724,15 @@ class SimulationHandler:
                 std = np.std(clairvoyant_rewards_per_experiment_t1 - learners_rewards_per_experiment[learnerIdx],
                              axis = 0)
 
-                axs[2].fill_between(
-                        np.array(d).ravel(),
-                        mean - 1.96 * std,
-                        mean + 1.96 * std,
-                        alpha = 0.1,
-                        label = r"95% confidence interval",
-                        color = colors_learners[learnerIdx]
-                )
+                if self.plot_confidence_intervals:
+                    axs[2].fill_between(
+                            np.array(d).ravel(),
+                            mean - 1.96 * std,
+                            mean + 1.96 * std,
+                            alpha = 0.1,
+                            label = r"95% confidence interval",
+                            color = colors_learners[learnerIdx]
+                    )
 
             """if self.find_learner_idx(util.BanditNames.GPTS_Learner.name) >= 0:
                 regret_upper_bound = []
@@ -750,8 +802,6 @@ class SimulationHandler:
         mng = plt.get_current_fig_manager()
         mng.resize(*mng.window.maxsize())
 
-        os.chdir("../results")
-
         plt.savefig(f'{self.simulation_name}.pdf')
         plt.show()
 
@@ -760,4 +810,3 @@ class SimulationHandler:
                 json.dump(results, f, ensure_ascii = False, indent = 4)
 
         f.close()
-

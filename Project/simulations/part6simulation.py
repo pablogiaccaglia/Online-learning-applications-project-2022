@@ -8,7 +8,7 @@ from learners.CusumGTSLearner import CusumGTSLearner
 from learners.GTS_Learner import GTS_Learner
 from simulations.Environment import Environment
 from simulations.SimulationHandler import SimulationHandler
-
+from entities.Utils import BanditNames
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
     experiments = 2
@@ -129,7 +129,8 @@ if __name__ == '__main__':
                                           boost_bias = boost_bias,
                                           boost_discount = boost_discount,
                                           plot_regressor_progress = None,
-                                          simulation_name='Part6Simulation'
+                                          simulation_name='Part6Simulation',
+                                          learner_profit_plot = None
                                           )
 
     simulationHandler.run_simulation()

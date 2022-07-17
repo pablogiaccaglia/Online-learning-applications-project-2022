@@ -166,7 +166,7 @@ def clear_output(wait = True, keep_scroll_back = False):
         os.system('cls' if os.name == 'nt' else "printf '\033c'")
 
 
-def get_colors():
+def get_colors(type = 1):
     # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
     CB91_Blue = '#2CBDFE'
@@ -196,7 +196,7 @@ def get_colors():
                '#7038F8',  # Dragon
                ]
 
-    return colors.copy()
+    return colors.copy() if type == 1 else colors2.copy()
 
 
 def retrieve_name(var):
