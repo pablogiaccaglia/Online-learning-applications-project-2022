@@ -76,6 +76,7 @@ class User:
         self.weighted_graph = weighted_graph
 
     def expected_profit(self, exp_number_noise, debug=False):
+        """ Return the expected profit for each primary product"""
         nodes = self.weighted_graph.get_all_nodes()
         expected_profits = [0, 0, 0, 0, 0]
 
