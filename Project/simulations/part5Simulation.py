@@ -10,8 +10,8 @@ from simulations.SimulationHandler import SimulationHandler
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
 
-    experiments = 2
-    days = 3
+    experiments = 100
+    days = 50
     N_user = 350 # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 500

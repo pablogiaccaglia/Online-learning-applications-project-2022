@@ -81,7 +81,11 @@ class SimulationHandler:
         self.plot_confidence_intervals = plot_confidence_intervals
 
         if save_results_to_file:
+            if not os.path.isdir("../results"):
+                os.makedirs("../results")
             os.chdir("../results")
+
+
 
         self.uniform_allocation_profits = []
 
