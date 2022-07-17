@@ -9,8 +9,8 @@ from simulations.SimulationHandler import SimulationHandler
 from entities.Utils import BanditNames
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-    experiments = 8
-    days = 30
+    experiments = 2
+    days = 3
     N_user = 300  # reference for what alpha = 1 refers to
     reference_price = 4.0
     daily_budget = 50 * 5
@@ -33,12 +33,12 @@ if __name__ == '__main__':
                                is_ucb=False,
                                is_gaussian=True)
 
-    """gpucb1_learner = CombWrapper(GPUCB1_Learner,
+    gpucb1_learner = CombWrapper(GPUCB1_Learner,
                                  5,
                                  n_arms,
                                  daily_budget,
                                  is_ucb = True,
-                                 is_gaussian = True)"""
+                                 is_gaussian = True)
 
     gts_learner = CombWrapper(GTS_Learner,
                               5,
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                               is_ucb = False,
                               is_gaussian = True)
 
-    learners = [gpts_learner]
+    learners = [gpts_learner, gts_learner, gpucb1_learner]
 
     simulationHandler = SimulationHandler(environmentConstructor=Environment,
                                           learners=learners,

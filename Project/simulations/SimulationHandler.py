@@ -40,7 +40,7 @@ class SimulationHandler:
                  boost_bias: float = -1.0,
                  plot_regressor_progress = None,
                  save_results_to_file = True,
-                 simulation_name: str= 'simulation'):
+                 simulation_name: str = 'simulation'):
         self.environmentConstructor = environmentConstructor
         self.environment = self.environmentConstructor()
         self.learners = learners
@@ -83,21 +83,13 @@ class SimulationHandler:
         self.boost_bias = boost_bias if boost_bias >= 0.0 else self.daily_budget / campaigns
 
         self.simulation_name = simulation_name
-        self.figsize = (13,6)
+        self.figsize = (16, 10)
 
         if non_stationary_args and isinstance(non_stationary_args, dict):
             self.phase_size = non_stationary_args['phase_size']
             self.num_users_phases = non_stationary_args['num_users_phases']
             self.prob_users_phases = non_stationary_args['prob_users_phases']
             self.non_stationary_env = True
-
-        if self.is_unknown_graph:
-            #   **** MONTE CARLO EXECUTION BEFORE SIMULATION ****
-            users, products, campaigns, allocated_budget, prob_users, real_graphs = self.environment.get_core_entities()
-            self.real_graphs = copy.deepcopy(real_graphs)
-            estimated_fully_conn_graphs, estimated_2_neighs_graphs, true_2_neighs_graphs = self.environment.run_graph_estimate()
-            self.estimated_fully_conn_graphs = estimated_fully_conn_graphs
-            #   ************************************************
 
     def __set_budgets_env(self, budgets):
         for i, b in enumerate(budgets):
@@ -165,6 +157,14 @@ class SimulationHandler:
                 self.clairvoyant_rewards_per_day_t2 = []
 
             self.learners_rewards_per_day = [[] for _ in range(len(self.learners))]
+
+            if self.is_unknown_graph:
+                #   **** MONTE CARLO EXECUTION BEFORE EXPERIMENT ITERATION ****
+                users, products, campaigns, allocated_budget, prob_users, real_graphs = self.environment.get_core_entities()
+                self.real_graphs = copy.deepcopy(real_graphs)
+                estimated_fully_conn_graphs, estimated_2_neighs_graphs, true_2_neighs_graphs = self.environment.run_graph_estimate()
+                self.estimated_fully_conn_graphs = estimated_fully_conn_graphs
+                #   ************************************************
 
             # -- Day Loop --
             for day in tqdm(range(self.days)):
@@ -747,10 +747,17 @@ class SimulationHandler:
             axs[3].set_title('Cumulative Regret', y = 1.0, pad = pad)
             axs[2].set_title('Regret', y = 1.0, pad = pad)
 
-        plt.show()
+        mng = plt.get_current_fig_manager()
+        mng.resize(*mng.window.maxsize())
+
         os.chdir("../results")
+
+        plt.savefig(f'{self.simulation_name}.pdf')
+        plt.show()
+
         if self.save_results_to_file:
             with open(f'{self.simulation_name}.json', 'w') as f:
                 json.dump(results, f, ensure_ascii = False, indent = 4)
+
         f.close()
-        plt.savefig(f'{self.simulation_name}.png')
+
