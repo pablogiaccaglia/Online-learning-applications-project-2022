@@ -20,10 +20,10 @@ class CombWrapper:
                  n_campaigns,
                  n_arms,
                  max_budget,
-                 arm_distance=None,
-                 is_ucb=False,
-                 is_gaussian=False,
-                 kwargs=None):  # arms are the budgets (e.g 0,10,20...)
+                 arm_distance = None,
+                 is_ucb = False,
+                 is_gaussian = False,
+                 kwargs = None):  # arms are the budgets (e.g 0,10,20...)
 
         self.learners = []
         self.max_b = max_budget
@@ -70,7 +70,6 @@ class CombWrapper:
             knapsack_r = np.array(all_samples)  # don't remove allocation cost, let learner work with estimated profits
             rewards.append(knapsack_r)
 
-
         # add padding for investments up to max budget, needed by knapsack algorithm
         budgets = np.array(self.arms)
         step = self.arm_distance
@@ -84,9 +83,9 @@ class CombWrapper:
             if _min < 0:
                 r += _min*-1"""
         padding_reward = 0 * np.ones((len(self.learners), len(padding_budgets)))
-        rewards = np.concatenate([np.array(rewards), padding_reward], axis=1)
+        rewards = np.concatenate([np.array(rewards), padding_reward], axis = 1)
 
-        k = Knapsack(rewards=np.array(rewards), budgets=budgets)
+        k = Knapsack(rewards = np.array(rewards), budgets = budgets)
         k.solve()
 
         if self.is_ucb:
@@ -101,7 +100,7 @@ class CombWrapper:
             cumulative_ucbs = np.zeros(len(self.arms))
 
             for idxAlloc, alloc in enumerate(allocs):
-                indexes = self.__indexes_super_arm(super_arm=alloc)  # [0, 3, 5 , 10]
+                indexes = self.__indexes_super_arm(super_arm = alloc)  # [0, 3, 5 , 10]
                 for learner, indexArm in zip(self.learners, indexes):
                     learner.update_ucbs()
                     cumulative_ucbs[idxAlloc] += learner.ucbs[indexArm]
@@ -116,19 +115,18 @@ class CombWrapper:
         # best allocation possible after combinatorial optimization problem
         super_arms = alloc[1:]
 
-
         if len(super_arms) > 5:
             # reshape superarms in case of multi campaign knapsack
             # knapsack output [c11,c12,c13,c21,c22,c23] -> [c11,c21, c12, c22. c13.c23]
             group_size = int(len(super_arms) / 5)
             a = np.array(super_arms).reshape((5, group_size))  # reshape in cluster of 3 res x 5 camp
-            tmp = np.reshape(a, len(super_arms), order='F')  # reorder per user
+            tmp = np.reshape(a, len(super_arms), order = 'F')  # reorder per user
             return tmp  # [ctx1|ctx2|ctx3|ctx4]  budget output in context execution
 
         # return best allocation possible after combinatorial optimization problem
         return super_arms
 
-    def update_observations(self, super_arm, env_rewards, show_warning=False):
+    def update_observations(self, super_arm, env_rewards, show_warning = False):
         index_arm = self.__indexes_super_arm(super_arm)
         not_pulled = 0
         for i, learner in enumerate(self.learners):

@@ -1,3 +1,5 @@
+from GPUCB1_Learner import GPUCB1_Learner
+from GTS_Learner import GTS_Learner
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
 from simulations.Environment import Environment
@@ -7,13 +9,13 @@ from entities.Utils import BanditNames
 
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-    experiments = 2
-    days = 3
-    N_user = 300  # reference for what alpha = 1 refers to
+    experiments = 100
+    days = 80
+    N_user = 350  # reference for what alpha = 1 refers to
     reference_price = 4.0
-    daily_budget = 50 * 5
-    step_k = 2
-    n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
+    daily_budget = 50 * 6
+    step_k = 5
+    n_arms = 3 * int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
     bool_alpha_noise = True
     bool_n_noise = True
@@ -29,7 +31,21 @@ if __name__ == '__main__':
                                is_ucb = False,
                                is_gaussian = True)
 
-    learners = [gpts_learner]
+    gpucb1_learner = CombWrapper(GPUCB1_Learner,
+                                 5,
+                                 n_arms,
+                                 daily_budget,
+                                 is_ucb = True,
+                                 is_gaussian = True)
+
+    gts_learner = CombWrapper(GTS_Learner,
+                              5,
+                              n_arms,
+                              daily_budget,
+                              is_ucb = False,
+                              is_gaussian = True)
+
+    learners = [gpts_learner, gts_learner, gpucb1_learner]
 
     simulationHandler = SimulationHandler(environmentConstructor = Environment,
                                           learners = learners,
@@ -49,7 +65,7 @@ if __name__ == '__main__':
                                           boost_start = boost_start,
                                           boost_bias = boost_bias,
                                           boost_discount = boost_discount,
-                                          plot_regressor_progress = BanditNames.GPTS_Learner.name,
+                                          plot_regressor_progress = None,
                                           simulation_name='Part4Simulation',
                                           learner_profit_plot = BanditNames.GPTS_Learner.name,
                                           plot_confidence_intervals = False

@@ -9,14 +9,13 @@ from simulations.SimulationHandler import SimulationHandler
 from entities.Utils import BanditNames
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-    experiments = 2
-    days = 3
-    N_user = 300  # reference for what alpha = 1 refers to
+    experiments = 100
+    days = 80
+    N_user = 350  # reference for what alpha = 1 refers to
     reference_price = 4.0
-    daily_budget = 50 * 5
+    daily_budget = 50 * 6
     step_k = 5
-    n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
-    n_arms = 30
+    n_arms = 3 * int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
     bool_alpha_noise = True
     bool_n_noise = False

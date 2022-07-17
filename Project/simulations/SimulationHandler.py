@@ -95,7 +95,7 @@ class SimulationHandler:
         self.learner_profit_plot = learner_profit_plot
 
         if non_stationary_args and isinstance(non_stationary_args, dict):
-            self.phase_size = non_stationary_args['phase_size']
+            self.phase_sizes = non_stationary_args['phase_sizes']
             self.num_users_phases = non_stationary_args['num_users_phases']
             self.prob_users_phases = non_stationary_args['prob_users_phases']
             self.non_stationary_env = True
@@ -188,7 +188,7 @@ class SimulationHandler:
                     self.environment.set_user_graphs(self.real_graphs)  # set real real_graphs for clavoyrant algorithm
 
                 if self.non_stationary_env:
-                    current_phase = int(day / self.phase_size)
+                    current_phase = day % len(self.phase_sizes)
                     self.n_users = self.num_users_phases[current_phase]
                     self.environment.prob_users = self.prob_users_phases[current_phase]
 

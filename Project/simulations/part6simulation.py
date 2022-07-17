@@ -11,18 +11,18 @@ from simulations.SimulationHandler import SimulationHandler
 from entities.Utils import BanditNames
 if __name__ == '__main__':
     """ @@@@ simulations SETUP @@@@ """
-    experiments = 2
-    days = 2
-    N_user = 300  # reference for what alpha = 1 refers to
+    experiments = 100
+    days = 80
+    N_user = 350  # reference for what alpha = 1 refers to
     reference_price = 4.0
-    daily_budget = 50 * 5
-    step_k = 2
-    n_arms = int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
+    daily_budget = 50 * 6
+    step_k = 5
+    n_arms = 3*int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
 
     bool_alpha_noise = True
-    bool_n_noise = False
+    bool_n_noise = True
     printBasicDebug = False
-    printKnapsackInfo = True
+    printKnapsackInfo = False
     boost_start = True
     boost_discount = 0.5  # boost discount wr to the highest reward
     boost_bias = daily_budget / 5  # ensure a positive reward when all pull 0
@@ -39,13 +39,6 @@ if __name__ == '__main__':
     kwargs_sw = {'window_size': window_size}
 
     """ @@@@ ---------------- @@@@ """
-
-    gpucb1_learner = CombWrapper(GPUCB1_Learner,
-                                 5,
-                                 n_arms,
-                                 daily_budget,
-                                 is_ucb = True,
-                                 is_gaussian = True)
 
     sw_gpucb1_learner = CombWrapper(SwGPUCB1_Learner,
                                     5,
@@ -85,15 +78,21 @@ if __name__ == '__main__':
                               is_ucb = False,
                               is_gaussian = True)
 
-    learners = [gpucb1_learner, sw_gpucb1_learner, gts_learner]
+    learners = [sw_gpucb1_learner, sw_gts_learner, cusum_gts_learner, cusum_gpucb1_learner, gts_learner]
 
     """ Number of users per phase """
 
-    N_user_phases = [N_user, int(N_user * 0.5), int(N_user + 0.5 * N_user), 2 * N_user]
+    N_user_phases = [N_user, int(N_user * 0.5), int(N_user + 0.5 * N_user)]
+
+    # 84 days -> 3 phases
+
+    # first phase -> 1 april -> 30 april  30 days NORMAL CONDITIONS
+    # second phase -> 1 maggio -> 28 maggio 28 days  HALF THE USERS
+    # third phase -> 29 maggio -> 20 giugno 18 days  1.5 THE USERS -> SALES e.g
 
     n_phases = len(N_user_phases)
 
-    phase_size = days / n_phases
+    phase_sizes = [30, 28, 22]
 
     """ Probability of users per phase """
 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
         prob_users_phases[phase] = list(probs)
 
     non_stationary_args = {
-        "phase_size": phase_size,
+        "phase_sizes": phase_sizes,
         "prob_users_phases": prob_users_phases,
         "num_users_phases": N_user_phases
     }
@@ -131,7 +130,7 @@ if __name__ == '__main__':
                                           boost_discount = boost_discount,
                                           plot_regressor_progress = None,
                                           simulation_name='Part6Simulation',
-                                          learner_profit_plot = None,
+                                          learner_profit_plot = BanditNames.SwGTSLearner.name,
                                           plot_confidence_intervals = False
                                           )
 

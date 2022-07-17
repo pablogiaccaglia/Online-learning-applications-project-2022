@@ -8,7 +8,7 @@ from entities.User import User
 from knapsack.Knapsack import Knapsack
 from learners.OfflineWeightsLearner import OfflineWeightsLearner
 from learners.OnlineWeightsLearner import OnlineWeightsLearner
-
+import seaborn as sns
 
 class Environment:
     def __init__(self):
@@ -50,20 +50,6 @@ class Environment:
             util.new_alpha_function(saturation_speed=0.09, max_value=mv, activation=act)
         ]
 
-        # plot alpha functions
-        do_plot = False
-        if do_plot:  # show or not alpha plot
-            test_alpha = alpha_usr3
-            img, axss = plt.subplots(nrows=2, ncols=3, figsize=(13, 6))
-            axs = axss.flatten()
-            for i in range(6):
-                x = np.linspace(0, 100, 100)
-                y = test_alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
-                axs[i].set_xlabel("budget")
-                axs[i].set_ylabel(f"alpha{i}_val")
-                axs[i].plot(x, y)
-            plt.show()
-
         """ Users SETUP """
         prob_user1 = 0.25
         prob_user2 = 0.45
@@ -83,6 +69,40 @@ class Environment:
         graph3 = util.random_fully_connected_graph(self.products)
 
         self.graphs = [graph1, graph2, graph3]
+
+        alphas = [alpha_usr1, alpha_usr2, alpha_usr3]
+
+        # plot alpha functions
+        do_plot = False
+        if do_plot:  # show or not alpha plot
+            colors = util.get_colors()
+            for userIdx, alpha in enumerate(alphas):
+                color = colors.pop()
+                img, axss = plt.subplots(nrows=2, ncols=3, figsize=(16, 10))
+                img.delaxes(axss[1, 2])  # The indexing is zero-based here
+                axs = axss.flatten()
+
+                plt.subplots_adjust(left = 0.05, right = 0.95, hspace = 0.6, top = 0.9, wspace = 0.4, bottom = 0.1)
+
+                img.suptitle("User " + str(userIdx + 1) + " α functions")
+
+                for ax in axs:
+                    ax.grid(alpha = 0.2)
+                    sns.despine(ax = ax, offset = 5, trim = False)
+
+                sns.set_style("ticks")
+                sns.despine()
+                sns.set_context('notebook')
+                for i in range(5):
+                    x = np.linspace(0, 100, 100)
+                    y = alpha[i](x).clip(0.0)  # visual clip, be careful using them plain
+                    axs[i].set_xlabel("budget")
+                    axs[i].set_ylabel(f"α value")
+                    axs[i].plot(x, y, color, label = 'α product ' + str(i+1), alpha = 0.5)
+                    axs[i].legend()
+
+                plt.savefig(f'{"AlphasUser" + str(userIdx)}.pdf')
+
 
         user1 = User(id=1,
                      reservation_prices=res_prices_1,
@@ -529,3 +549,6 @@ class Environment:
                       util.get_prettyprint_array(estimatedGraph.get_adjacency_matrix()))
                 print("\nBetas Matrix: \n", util.get_prettyprint_array(estimatedGraph.get_betas_matrix()))
         return estimation_fully_con, estimation_2_neigh, true_result_history
+
+
+env = Environment()

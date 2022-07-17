@@ -14,7 +14,7 @@ class CusumGPUCB1Learner(GPUCB1_Learner):
                  epsilon = 0.05,
                  detectionThreshold = 20,
                  explorationAlpha = 0.01,
-                 delta = 50.):
+                 delta = 0.1):
 
         cusum_args = {"samplesForRefPoint": samplesForRefPoint,
                         "epsilon":            epsilon,
