@@ -2,6 +2,7 @@ from copy import deepcopy
 import numpy as np
 from learners.CombWrapper import CombWrapper
 from learners.GPTS_Learner import GPTS_Learner
+from learners.GTS_Learner import GTS_Learner
 from simulations.Environment import Environment
 import matplotlib.pyplot as plt
 import progressbar
@@ -20,14 +21,15 @@ matplotlib.use("TkAgg")
 +---------+---------+--------+
 """
 experiments = 100
-days = 80
-N_user = 350  # reference for what alpha = 1 refers to
+days = 230
+N_user = 300  # reference for what alpha = 1 refers to
 reference_price = 4.0
-daily_budget = 50 * 6
+daily_budget = 40 * 5
 step_k = 5
 arm_distance = 10
-n_arms = 3 * int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
-n_budget = int(daily_budget / step_k)
+"""n_arms = 3 * int(np.ceil(np.power(days * np.log(days), 0.25))) + 1
+n_budget = int(daily_budget / step_k)"""
+n_arms = 13
 environment = Environment()
 
 if daily_budget < arm_distance * n_arms:
@@ -39,10 +41,10 @@ printBasicDebug = False
 printKnapsackInfo = False
 
 # ******* Context initialization ********
-breakpoint_1 = 40
-breakpoint_2 = 100
-context_gen_days = 40
-random_init_days = 5
+breakpoint_1 = 60
+breakpoint_2 = 122
+context_gen_days = 60
+random_init_days = 7
 rewards_clairvoyant = []
 base_learner_rewards = []
 ctx_learner_rewards = []
@@ -65,7 +67,7 @@ c0_reward = []
 ctx_reward = []
 
 ctx_algorithm = GPTS_Learner
-# ctx_algorithm = GTS_Learner
+#ctx_algorithm = GTS_Learner
 
 img, axss = plt.subplots(nrows=4, ncols=5, figsize=(13, 6))  # alpha plots
 axs = axss.flatten()
@@ -310,7 +312,7 @@ for day in progressbar.progressbar(range(days)):
         # random init
         if day < breakpoint_1 + random_init_days or breakpoint_2 <= day < breakpoint_2 + random_init_days:
             idx = np.random.choice(len(base_learner.arms) - 1, 5 * len(contexts), replace=True)
-            loops = 3 * len(contexts)
+            loops = 0 # len(contexts)
             while np.sum(np.array(base_learner.arms)[idx]) >= daily_budget:
                 idx = np.random.choice(len(base_learner.arms) - 1 - loops, 5 * len(contexts), replace=True)
                 loops += 1
@@ -377,47 +379,3 @@ for day in progressbar.progressbar(range(days)):
         reward_plot(active=True)
         alpha_plot(base_learner)
 plt.show()
-
-"""# ********* statistical measures *********************
-print(f"super arm:  {super_arm}")
-print(f"alloc knap: {alloc[1:]}")
-
-print(f"\n***** FINAL RESULT *****")
-print(f"days simulated: {days}")
-print(f"total profit:\t {sum(rewards_clairvoyant):.4f}€")
-print(f"standard deviation:\t {np.std(rewards_clairvoyant):.4f}€")
-print(base_learner_rewards)
-print(f"Learner profit:\t {sum(base_learner_rewards):.4f}€")
-print("----------------------------")
-print(f"average profit:\t {np.mean(rewards_clairvoyant):.4f}€")
-print(f"\tstd:\t {np.std(rewards_clairvoyant):.4f}€")
-print(f"average reward:\t {np.mean(base_learner_rewards):.4f}€")
-print(f"\tstd:\t {np.std(base_learner_rewards):.4f}€")
-print(f"average regret\t {np.mean(np.array(rewards_clairvoyant) - np.array(base_learner_rewards)):.4f}€")
-print(f"\tstd:\t {np.std(np.array(rewards_clairvoyant) - np.array(base_learner_rewards)):.4f}€")
-
-plt.close()
-d = np.linspace(0, len(rewards_clairvoyant), len(rewards_clairvoyant))
-
-img, axss = plt.subplots(nrows=2, ncols=2, figsize=(13, 6))
-axs = axss.flatten()
-
-axs[0].set_xlabel("days")
-axs[0].set_ylabel("reward")
-axs[0].plot(d, rewards_clairvoyant)
-axs[0].plot(d, base_learner_rewards)
-
-axs[1].set_xlabel("days")
-axs[1].set_ylabel("cumulative reward")
-axs[1].plot(d, np.cumsum(rewards_clairvoyant))
-axs[1].plot(d, np.cumsum(base_learner_rewards))
-
-axs[2].set_xlabel("days")
-axs[2].set_ylabel("cumulative regret")
-axs[2].plot(d, np.cumsum(np.array(rewards_clairvoyant) - np.array(base_learner_rewards)))
-
-axs[3].set_xlabel("days")
-axs[3].set_ylabel("regret")
-axs[3].plot(d, np.array(rewards_clairvoyant) - np.array(base_learner_rewards))
-plt.show()
-"""
