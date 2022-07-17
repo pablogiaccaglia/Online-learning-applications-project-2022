@@ -376,7 +376,7 @@ class Environment:
                     alpha = self.campaigns[cmp_index].get_alpha_i(user.alpha_functions[cmp_index]) * \
                             noise_alpha[user_idx][cmp_index]
                     value_per_click = user.expected_profit(exp_number_noise[user_idx])[cmp_index]
-                    expected_gross_profit = self.prob_users[
+                    expected_gross_profit = prob_users[
                                                 user_idx] * alpha * value_per_click * n_users * reference_price
                     multiplier = 2 if user_idx == 0 else 1
                     rewards[cmp_index][budget_idx] += np.single(expected_gross_profit) * multiplier
