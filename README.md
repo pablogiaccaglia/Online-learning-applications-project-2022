@@ -7,7 +7,7 @@
 | Ambrosini Barzaghi | Riccardo  | riccardo1.ambrosini@mail.polimi.it |
 | Bonalumi           | Marco     | marco1.bonalumi@mail.polimi.it     |
 | Careddu            | Gianmario | gianmario.careddu@mail.polimi.it   |
-| Giaccaglia         | Pablo     | pablo.giaccaglia@mail.polimi.i     |
+| Giaccaglia         | Pablo     | pablo.giaccaglia@mail.polimi.it    |
 | Zoccheddu          | Sara      | sara.zoccheddu@mail.polimi.it      |
 
 ## Description
