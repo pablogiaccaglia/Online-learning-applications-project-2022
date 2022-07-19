@@ -1,4 +1,4 @@
-# Online Learning Application
+# Online Learning Application Project - Social Influence & Advertising
 
 ## Team 15
 ---
