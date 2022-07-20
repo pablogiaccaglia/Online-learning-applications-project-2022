@@ -16,7 +16,7 @@ This repository contains the implementation of the project Advertising and Socia
 
 ## Usage
 
-In the simulations folders there are 6 runnable files, one for each required step. They all call [SimulationHandler](Project/simulations/SimulationHandler.py), that has a number of settable parameters. The most notable one is ```plot_regressor_bar```, which accepts as parameter the name of one learner to dynamically print the learnt curve. e.g. ```plot_regressor_bar=BanditNames.GPTS_Learner.name```. See [learners](Project/learners) for the other learners.
+In the simulations folders there are 6 runnable files, one for each required step. They all call [SimulationHandler](Project/simulations/SimulationHandler.py), that has a number of settable parameters. The most notable one is ```plot_regressor_progress```, which accepts as parameter the name of one learner to dynamically print the learnt curve. e.g. ```plot_regressor_progress=BanditNames.GPTS_Learner.name```. See [learners](Project/learners) for the other learners.
 
 ## Installation
 Clone and install: 
