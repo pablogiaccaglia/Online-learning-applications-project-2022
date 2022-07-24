@@ -49,11 +49,13 @@ Things to implements:
     <img src="https://raw.githubusercontent.com/pablogiaccaglia/Online-learning-applications-project-2022/main/media/alphas.svg" width="1000" alt="vanilla social influence"/>
 </p>
 
----
 
-Simulation Framework      |  Simulation Setup
-:-------------------------:|:-------------------------:
-![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/framework.png)| ![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/setup.png)
+
+Simulation Framework      |  Simulation Setup | Implemented Bandits
+:-------------------------:|:-------------------------:|:-------------------------:
+![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/framework.png)| ![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/setup.png) | ![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/bandits.png) 
+
+---
 
 - **Step 2: Optimization algorithm.** Formally state the optimization problem where the objective function is the profit, defined as the difference between the expected margin and the spent in advertising. Design an exact, dynamic-programming algorithm to optimize the function when all the parameters are known. Notice that the value per click provided by an advertising campaign is the expected margin from landing to the corresponding product. Furthermore, in the dynamic-programming algorithm, you can find the best way to spend the budget, for every feasible value of the budget, neglecting that the budget spent is to subtract from the objective function. Thus, you can use the standard dynamic-programming algorithm. After you have filled the entire dynamic-programming table, you can subtract the corresponding budget spent from the value of every cell of the last row and then look for the best allocation maximizing the difference between expected value and budget spent. Deveop the algorithm by Python.
 
@@ -61,21 +63,56 @@ Simulation Framework      |  Simulation Setup
     <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step2.svg" width="1000" alt="vanilla social influence"/>
 </p>
 
+---
 
 - **Step 3: Optimization with uncertain 𝛼 functions.** Focus on the situation in which the binary features cannot be observed and therefore data are aggregated. Design bandit algorithms (combining GP with UCB and TS) to face the case in which the alpha functions are unknown. Deveop the algorithms by Python and evaluate their performance when applied to your simulator.
 
 Performance Results      |  GP TS Estimated Profit
-:-------------------------:|:-------------------------:
-![](https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step3-results.svg)| 
-
+:-----------------------:|:-------------------------:
+  <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step3-results.svg" width="1200" alt="vanilla social influence"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step3-results-profit.svg" width="1200" alt="vanilla social influence"/>
+  
+---
 
 - **Step 4: Optimization with uncertain 𝛼 functions and number of items sold.** Do the same of Step 3 to the case in which also the number of items sold per product are uncertain. Deveop the algorithms by Python and evaluate their performance when applied to your simulator.
 
+Performance Results      |  GP TS Estimated Profit
+:-----------------------:|:-------------------------:
+  <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step4-results.svg" width="1200" alt="vanilla social influence"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step4-results-profit.svg" width="1200" alt="vanilla social influence"/>
+  
+
+---
+
+
 - **Step 5: Optimization with uncertain graph weights.** Do the same as Step 3 in the case the only uncertain parameters are the graph weights. Develop the algorithms by Python and evaluate their performance when applied to your simulator.
+
+Weights Estimation      |  Performance Results
+:-----------------------:|:-------------------------:
+  <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step5-estimation.svg" width="1200"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step5-results.svg" width="1200" alt="vanilla social influence"/>
+  
+  
+ ---
 
 - **Step 6: Non-stationary demand curve.** Now assume that the demand curves could be subjected to some abrupt changes. Use a UCB-like approach with a change detection algorithm to face this situation and show whether it works better or worse than using a sliding-window UCB-like algorithm. Develop the algorithms by Python and evaluate their performance when applied to your simulator.
 
+Abdrupt Changes      |  Algorithms Parameters
+:-----------------------:|:-------------------------:
+  <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step6-changes.svg" width="1200"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step6-parameters.svg" width="1200" alt="vanilla social influence"/> 
+ 
+
+<h3><p align="center"><b>Performance Results</b></></h3>
+ 
+ <p align="center">
+    <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step6-results.svg" width="1000" alt="vanilla social influence"/>
+</p>
+
+ 
+---
+    
 - **Step 7: Context generation.** Do the same of Step 4 when the features can be observed by the ecommerce website. For simplicity, activate the context-generation algorithms every 2 weeks. With multiple contexts, each single context can be optimized independently of the others. Notice that the split is performed simultaneously over all the campaigns. For instance, if you decide to split over a binary feature, then the split will be performed over all the 5 campaigns simultaneously. This is done to simplify the number of possible splits one can deal with. Once you splitted in multiple contexts, every context can be used to target the ads at best. More precisely, features can be used as target information of the campaigns, thus leading to replicate the campaigns. For instance, if the algorithms split according to a binary feature generating two contexts, then the 5 campaigns are replicated for every single context, say C1 and C2. Reasonably, C1 and C2 will be characterized by different 𝛼 functions. In this case, the budget optimization problem includes 10 campaigns. This is equivalent to say that we need to decide whether to assign more budget, e.g., to the campaign of P1 for C1 rather than to the campaign of P1 for C2. Develop the algorithms by Python and evaluate their performance when applied to your simulator.
+    
+1️⃣     |  2️⃣ | 3️⃣
+:-----------------------:|:-------------------------: |:-------------------------:
+  <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step7-1.svg" width="1200"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step7-2.svg" width="1200" alt="vanilla social influence"/> |   <img src="https://github.com/pablogiaccaglia/Online-learning-applications-project-2022/blob/main/media/step7-3.svg" width="1200" alt="vanilla social influence"/>
 
 # System requirements
 
