@@ -130,6 +130,12 @@ pip install -r requirements.txt
 
 ---
 
+## 👨‍💻 Usage
+
+In the ```simulations``` folders there are 6 runnable files, one for each required step (2-7). They all call [SimulationHandler](Project/simulations/SimulationHandler.py), that has a number of settable parameters. The most notable one is ```plot_regressor_progress```, which accepts as parameter the name of one learner to dynamically print the learnt curve. e.g. ```plot_regressor_progress=BanditNames.GPTS_Learner.name```. See [learners](Project/learners) for the other learners.
+
+---
+
 # 🤵 Authors
 | Surname            | Name      | Contact Info                       |
 |:-------------------|:----------|:-----------------------------------|
