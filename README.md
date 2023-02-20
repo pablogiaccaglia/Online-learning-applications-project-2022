@@ -4,7 +4,7 @@
 - 📙 [Description](#-description)
 - ⚙ [System requirements️](#system-requirements)
 - 🚀 [Setup instructions](#-setup-instructions)
-- 📃 [Project specification](Project-Proposals.pdf)
+- 📃 [Project specification](Project%20Proposals.pdf)
 - 🗣️ [Presentation](Presentation.pdf)
 - 📜 [Report](Report.pdf)
 - 👨‍💻 [Usage](#-usage)
